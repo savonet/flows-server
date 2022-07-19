@@ -43,7 +43,7 @@ def register_flow(~server="",~user="default",~password="default",
                  ("email",email),
                  ("radio",radio)]
   def request(~cmd,~params) =
-    log = log(label=radio)
+    log = fun(~level, s) -> log(label=radio, level=level, s)
     log(level=4,"Processing command #{cmd} with arguments:")
     def log_arg(x) =
       let (label, value) = x
@@ -98,9 +98,8 @@ def register_flow(~server="",~user="default",~password="default",
     params = [("m_title",title),("m_artist",artist)]
     def update_song() =
       request(cmd="metadata",params=params)
-      (-1.)
     end
-    add_timeout(fast=false,0.,update_song)
+    thread.run(update_song)
   end
   source.on_metadata(s, metadata)
 end
