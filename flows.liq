@@ -35,14 +35,13 @@ def register_flow(~server="",~user="default",~password="default",
   # Initial variables
   ping_period = 600. # Pinging period in seconds
 
-  # Fix default parameters
-  # and set request function.
+  # Fix default parameters and set request function.
   base_params = [("v", "0.0"),
                  ("user",user),
                  ("password",password),
                  ("email",email),
                  ("radio",radio)]
-  def request(~cmd,~params) =
+  def request(~cmd, ~params) =
     log = fun(~level, s) -> log(label=radio, level=level, s)
     log(level=4,"Processing command #{cmd} with arguments:")
     def log_arg(x) =
@@ -58,7 +57,7 @@ def register_flow(~server="",~user="default",~password="default",
       y = url.encode(y)
       "#{x}=#{y}"
     end
-    params = string.concat(separator="&",list.map(f,params))
+    params = string.concat(separator="&", list.map(f,params))
     url = "#{server}?cmd=#{cmd}&#{params}"
 
     # TODO: do something with errors!
@@ -70,17 +69,16 @@ def register_flow(~server="",~user="default",~password="default",
   end
 
   # Register radio
-  params = [("radio_website",website),
+  params = [("radio_website",    website),
             ("radio_description",description),
-            ("radio_genre",genre)]
-  request(cmd="add radio",params=params)
+            ("radio_genre",      genre)]
+  request(cmd="add radio", params=params)
 
   # Ping
   def ping() =
     ignore(request(cmd="ping radio",params=[]))
-    ping_period
   end
-  add_timeout(fast=false,ping_period,ping)
+  thread.run(fast=false, every=ping_period, ping)
 
   # Register streams
   def register_stream(format_url)
