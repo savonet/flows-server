@@ -74,7 +74,9 @@ let server =
         | Missing_parameter p -> Server.respond_string ~status:(`Code 400) ~body:(Printf.sprintf "Missing parameter: %s." p) ()
         | Invalid_radio r -> Server.respond_string ~status:(`Code 400) ~body:(Printf.sprintf "Unknown radio: %s." r) ()
       )
-    (* | "/radios" -> *)
+    | "/radios" ->
+      let body = Radio.all_to_json () in
+      Server.respond_string ~status:`OK ~body ()
     | _ -> Server.respond_string ~status:`OK ~body:(Printf.sprintf "This is the page for %s." path) ()
   in
   Server.create ~mode:(`TCP (`Port port)) (Server.make ~callback ())

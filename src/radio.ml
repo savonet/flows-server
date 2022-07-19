@@ -41,6 +41,21 @@ let clear_streams r =
 let add_stream r ~format ~url =
   set {r with streams = {format;url}::r.streams}
 
-(* let all_to_json () = *)
-  (* List.map ) db; *)
-  (* Yojson.Basic.to_string json *)
+let all_to_json () =
+  db
+  |> DB.to_seq
+  |> Seq.map (fun (id,r) ->
+      `Assoc
+        [
+          "token", `String id;
+          "name", `String r.name;
+          "website", `String r.website;
+          "description", `String r.description;
+          "genre", `String r.genre;
+          "artist", `String r.artist;
+          "title", `String r.title
+        ]
+    )
+  |> List.of_seq
+  |> fun l -> `List l
+  |> Yojson.Basic.pretty_to_string
