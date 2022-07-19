@@ -19,9 +19,10 @@ let create ~to_string ~of_string (_name : string) : 'a t =
   { to_string; of_string; table = []; m = Mutex.create () }
 
 let add (db : 'a t) k v =
-  (* TODO: save here *)
+  (* TODO: save after *)
   mutexify db (fun () ->
-      db.table <- (k,v)::db.table
+      let table = List.remove_assoc k db.table in
+      db.table <- (k,v)::table
     ) ()
 
 let find_opt (db : 'a t) k =

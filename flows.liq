@@ -69,9 +69,9 @@ def register_flow(~server="",~user="default",~password="default",
   end
 
   # Register radio
-  params = [("radio_website",    website),
-            ("radio_description",description),
-            ("radio_genre",      genre)]
+  params = [("website",    website),
+            ("description",description),
+            ("genre",      genre)]
   request(cmd="add radio", params=params)
 
   # Ping
@@ -83,8 +83,8 @@ def register_flow(~server="",~user="default",~password="default",
   # Register streams
   def register_stream(format_url)
     let (format, url) = format_url
-    params = [("stream_format",format), ("stream_url",url)]
-    request(cmd="add stream",params=params)
+    params = [("format",format), ("url",url)]
+    request(cmd="add stream", params=params)
   end
   request(cmd="clear streams",params=[])
   list.iter(register_stream,streams)
@@ -93,7 +93,7 @@ def register_flow(~server="",~user="default",~password="default",
   def metadata(m) =
     artist = m["artist"]
     title = m["title"]
-    params = [("m_title",title),("m_artist",artist)]
+    params = [("title",title),("artist",artist)]
     def update_song() =
       request(cmd="metadata",params=params)
     end
