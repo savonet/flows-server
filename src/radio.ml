@@ -1,14 +1,22 @@
 type t = {
+  name : string;
+  user : string;
   website : string;
   description : string;
   genre : string
 }
 
-let to_string k r = Printf.sprintf "%S,%S,%S,%S" k r.website r.description r.genre
+let to_string id r = Printf.sprintf "%S,%S,%S,%S,%S,%S" id r.name r.user r.website r.description r.genre
 
-let of_string r = Scanf.sscanf r "%S,%S,%S,%S" (fun radio website description genre -> radio, {website; description; genre})
+let of_string r = Scanf.sscanf r "%S,%S,%S,%S,%S,%S" (fun id name user website description genre -> id, {name; user; website; description; genre})
 
-let radios = DB.create ~to_string ~of_string "radios"
+let db = DB.create ~to_string ~of_string "radios"
 
-let register ~website ~description ~genre radio =
-  DB.add radios radio { website; description; genre }
+let id r = r.user ^ "/" ^ r.name
+
+let register ~name ~user ~website ~description ~genre =
+  let r = { name; user; website; description; genre } in
+  DB.add db (id r) r
+
+(* let json_all () = *)
+  (* List.map *)
