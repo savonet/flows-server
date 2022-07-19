@@ -1,5 +1,6 @@
 (** Abstract database operations. *)
 
+(** A database. *)
 type 'a t =
   {
     name : string;
@@ -17,6 +18,7 @@ let mutexify db f x =
   Mutex.unlock db.m;
   y
 
+(** Create a database. *)
 let create ~to_json ~of_json name =
   let db = { name; to_json; of_json; table = []; m = Mutex.create () } in
   let filename = filename db in
@@ -33,6 +35,8 @@ let create ~to_json ~of_json name =
     { db with table }
   else db
 
+(** Add an entry to the database. Any previous value associated to the key is
+    removed. *)
 let add db k v =
   mutexify db (fun () ->
       let table = List.remove_assoc k db.table in
@@ -42,9 +46,11 @@ let add db k v =
       close_out oc
     ) ()
 
+(** Find an entry. *)
 let find_opt db k =
   mutexify db (fun k ->
       List.assoc_opt k db.table
     ) k
 
+(** Iterator over database. *)
 let to_seq db = List.to_seq db.table

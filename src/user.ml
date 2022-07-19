@@ -1,5 +1,6 @@
 (** Users. *)
 
+(** An user. *)
 type t = {
   user : string; (** user *)
   pass : Sha256.t; (** encrypted password *)
@@ -24,10 +25,10 @@ let of_json = function
       last = List.assoc "last" l |> JSON.float;
     }
   | _ -> assert false
-  (* Scanf.sscanf s "%S,%S,%S,%f" (fun user pass mail last -> let pass = Sha256.of_hex pass in user, {user; pass; mail; last} ) *)
 
 let db = DB.create ~of_json ~to_json "users"
 
+(** Find user with given username. *)
 let find_opt user =
   DB.find_opt db user
 

@@ -1,9 +1,13 @@
+(** Operations on radios. *)
+
+(** A stream. *)
 type stream =
   {
     format : string;
     url : string;
   }
 
+(** A radio. *)
 type t = {
   name : string;
   user : string;
@@ -61,14 +65,17 @@ let db = DB.create ~to_json ~of_json "radios"
 
 let id ~radio ~user = user ^ "/" ^ radio
 
+(** Register a radio. *)
 let register ~name ~user ~website ~description ~genre =
   let last = Unix.time () in
   let r = { name; user; website; description; genre; artist = "?"; title = "?"; streams = []; last } in
   DB.add db (id ~radio:name ~user) r
 
+(** Find radio with given user and radio name. *)
 let find_opt ~user ~radio =
   DB.find_opt db (id ~user ~radio)
 
+(** Update values for radio. *)
 let set r =
   let radio_id r = id ~radio:r.name ~user:r.user in
   DB.add db (radio_id r) r
@@ -77,18 +84,25 @@ let ping r =
   let r = {r with last = Unix.time ()} in
   set r
 
+(** Remove all streams for radio. *)
 let clear_streams r =
   set {r with streams = []}
 
+(** Add a stream for radio. *)
 let add_stream r ~format ~url =
   set {r with streams = {format;url}::r.streams}
 
+(** Set metadata of the currently playing title. *)
 let set_metadata r ~artist ~title =
   set {r with artist; title}
 
+(** Export all radios to JSON. *)
 let all_to_json () =
+  let now = Unix.time () in
   db
   |> DB.to_seq
+  (* Forget radios not updated for more than 1h. *)
+  |> Seq.filter (fun (_,r) -> now -. r.last <= 3600.)
   |> Seq.map (fun (id,r) ->
       (* Not using the default JSON exporter here, since we don't want to
          mistakenly leak private data. *)
