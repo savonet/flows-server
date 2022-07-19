@@ -9,7 +9,8 @@ exception Invalid_radio of string
 exception Missing_parameter of string
 
 let server =
-  let callback _conn req body =
+  let callback conn req body =
+    let _ip = match fst conn with Conduit_lwt_unix.TCP tcp -> Ipaddr.to_string tcp.ip | _ -> assert false in
     let uri = req |> Request.uri in
     let path = Uri.path uri in
     let query = Uri.query uri |> List.filter_map (fun (k,v) -> match v with [v] -> Some (k,v) | _ -> None) in
