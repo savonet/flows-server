@@ -76,14 +76,14 @@ def register_flow(~server="",~user="default",~password="default",
 
   # Ping
   def ping() =
-    ignore(request(cmd="ping radio",params=[]))
+    ignore(request(cmd="ping radio", params=[]))
   end
   thread.run(fast=false, every=ping_period, ping)
 
   # Register streams
   def register_stream(format_url)
     let (format, url) = format_url
-    params = [("stream_format",format),("stream_url",url)]
+    params = [("stream_format",format), ("stream_url",url)]
     request(cmd="add stream",params=params)
   end
   request(cmd="clear streams",params=[])
