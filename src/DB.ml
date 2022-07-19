@@ -3,8 +3,8 @@
 type 'a t =
   {
     name : string;
-    to_string : string -> 'a -> string;
-    of_string : string -> string * 'a;
+    to_json : 'a -> JSON.t;
+    of_json : JSON.t -> 'a;
     mutable table : (string * 'a) list;
     m : Mutex.t
   }
@@ -17,14 +17,19 @@ let mutexify db f x =
   Mutex.unlock db.m;
   y
 
-let create ~to_string ~of_string name =
-  let db = { name; to_string; of_string; table = []; m = Mutex.create () } in
+let create ~to_json ~of_json name =
+  let db = { name; to_json; of_json; table = []; m = Mutex.create () } in
   let filename = filename db in
   if Sys.file_exists filename then
     let ic = open_in filename in
     let s = really_input_string ic (in_channel_length ic) in
     close_in ic;
-    let table = String.split_on_char '\n' s |> List.filter (fun s -> s <> "") |> List.map db.of_string in
+    let table =
+      let table = JSON.of_string s in
+      match table with
+      | `Assoc l -> List.map (fun (k,v) -> k, of_json v) l
+      | _ -> assert false
+    in
     { db with table }
   else db
 
@@ -33,7 +38,7 @@ let add db k v =
       let table = List.remove_assoc k db.table in
       db.table <- (k,v)::table;
       let oc = open_out (filename db) in
-      List.iter (fun (k,v) -> output_string oc (db.to_string k v); output_string oc "\n") db.table;
+      `Assoc (List.map (fun (k,v) -> k, db.to_json v) db.table) |> JSON.to_string |> output_string oc;
       close_out oc
     ) ()
 

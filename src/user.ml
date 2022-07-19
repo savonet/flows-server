@@ -7,14 +7,26 @@ type t = {
   last : float; (** last login *)
 }
 
-let to_string user u =
-  assert (user = u.user);
-  Printf.sprintf "%S,%S,%S,%f" u.user (Sha256.to_hex u.pass) u.mail u.last
+let to_json u =
+  `Assoc [
+    "user", `String u.user;
+    "pass", `String (Sha256.to_hex u.pass);
+    "mail", `String u.mail;
+    "last", `Float u.last
+  ]
 
-let of_string s =
-  Scanf.sscanf s "%S,%S,%S,%f" (fun user pass mail last -> let pass = Sha256.of_hex pass in user, {user; pass; mail; last} )
+let of_json = function
+  | `Assoc l ->
+    {
+      user = List.assoc "user" l |> JSON.string;
+      pass = List.assoc "pass" l |> JSON.string |> Sha256.of_hex;
+      mail = List.assoc "mail" l |> JSON.string;
+      last = List.assoc "last" l |> JSON.float;
+    }
+  | _ -> assert false
+  (* Scanf.sscanf s "%S,%S,%S,%f" (fun user pass mail last -> let pass = Sha256.of_hex pass in user, {user; pass; mail; last} ) *)
 
-let db = DB.create ~of_string ~to_string "users"
+let db = DB.create ~of_json ~to_json "users"
 
 let find_opt user =
   DB.find_opt db user

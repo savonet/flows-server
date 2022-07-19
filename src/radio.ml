@@ -16,11 +16,48 @@ type t = {
   last : float; (** last update *)
 }
 
-let to_string id r = Printf.sprintf "%S,%S,%S,%S,%S,%S,%f" id r.name r.user r.website r.description r.genre r.last
+let to_json r =
+  `Assoc [
+    "name", `String r.name;
+    "user", `String r.user;
+    "website", `String r.website;
+    "description", `String r.description;
+    "genre", `String r.genre;
+    "artist", `String r.artist;
+    "title", `String r.title;
+    "streams", `List (List.map (fun s -> `Assoc ["format", `String s.format; "url", `String s.url]) r.streams);
+    "last", `Float r.last
+  ]
 
-let of_string r = Scanf.sscanf r "%S,%S,%S,%S,%S,%S,%f" (fun id name user website description genre last -> id, {name; user; website; description; genre; artist = "?"; title = "?"; streams = []; last })
+let of_json = function
+  | `Assoc l ->
+    let streams = function
+      | `List l ->
+        List.map
+          (function
+            | `Assoc l ->
+              {
+                format = List.assoc "format" l |> JSON.string;
+                url = List.assoc "url" l |> JSON.string
+              }
+            | _ -> assert false
+          ) l
+      | _ -> assert false
+    in
+    {
+      name = List.assoc "name" l |> JSON.string;
+      user = List.assoc "user" l |> JSON.string;
+      website = List.assoc "website" l |> JSON.string;
+      description = List.assoc "description" l |> JSON.string;
+      genre = List.assoc "genre" l |> JSON.string;
+      artist = List.assoc "artist" l |> JSON.string;
+      title = List.assoc "title" l |> JSON.string;
+      streams = List.assoc "streams" l |> streams;
+      last = List.assoc "last" l |> JSON.float
+    }
+  | _ -> assert false
 
-let db = DB.create ~to_string ~of_string "radios"
+let db = DB.create ~to_json ~of_json "radios"
 
 let id ~radio ~user = user ^ "/" ^ radio
 
@@ -53,6 +90,8 @@ let all_to_json () =
   db
   |> DB.to_seq
   |> Seq.map (fun (id,r) ->
+      (* Not using the default JSON exporter here, since we don't want to
+         mistakenly leak private data. *)
       let streams = `List (List.map (fun s -> `Assoc ["format", `String s.format; "url", `String s.url]) r.streams) in
       `Assoc
         [
@@ -68,4 +107,4 @@ let all_to_json () =
     )
   |> List.of_seq
   |> fun l -> `List l
-  |> Yojson.Basic.pretty_to_string
+  |> JSON.to_string ~pretty:true
