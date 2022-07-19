@@ -45,7 +45,10 @@ let server =
           let pass = get_param ~default:"default" "password" in
           let get_radio () = get_radio ~user ~radio:(get_param "radio") in
           if user <> "default" || pass <> "default" then
-            if not (User.valid_or_register user pass) then raise (Invalid_password user);
+            (
+              let mail = get_param "mail" in
+              if not (User.valid_or_register ~user ~pass ~mail) then raise (Invalid_password user)
+            );
           if not (List.mem_assoc "cmd" query) then Server.respond_string ~status:(`Code 400) ~body:"No command provided." () else
             let cmd = List.assoc "cmd" query in
             match cmd with
@@ -69,6 +72,12 @@ let server =
               let format = get_param "format" in
               let url = get_param "url" in
               Radio.add_stream radio ~format ~url;
+              ok ()
+            | "metadata" ->
+              let radio = get_radio () in
+              let artist = get_param "artist" in
+              let title = get_param "title" in
+              Radio.set_metadata radio ~artist ~title;
               ok ()
             | _ -> Server.respond_string ~status:(`Code 400) ~body:(Printf.sprintf "Invalid command: %s." cmd) ()
         with

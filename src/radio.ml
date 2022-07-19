@@ -46,6 +46,9 @@ let clear_streams r =
 let add_stream r ~format ~url =
   set {r with streams = {format;url}::r.streams}
 
+let set_metadata r ~artist ~title =
+  set {r with artist; title}
+
 let all_to_json () =
   db
   |> DB.to_seq

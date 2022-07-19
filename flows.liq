@@ -14,7 +14,7 @@
 #                 of the form "ogg/128k" consisting of the codec and \
 #                 the bitrate, separated by "/".
 def register_flow(~server="",~user="default",~password="default",
-                  ~email="",~radio,~website,~description,~genre,
+                  ~mail="",~radio,~website,~description,~genre,
                   ~streams,s)
 
   # If the server is "", we get the server from sf.net
@@ -36,10 +36,10 @@ def register_flow(~server="",~user="default",~password="default",
   ping_period = 600. # Pinging period in seconds
 
   # Fix default parameters and set request function.
-  base_params = [("v", "0.0"),
+  base_params = [("v", "0.1"),
                  ("user",user),
                  ("password",password),
-                 ("email",email),
+                 ("mail",mail),
                  ("radio",radio)]
   def request(~cmd, ~params) =
     log = fun(~level, s) -> log(label=radio, level=level, s)
@@ -93,7 +93,7 @@ def register_flow(~server="",~user="default",~password="default",
   def metadata(m) =
     artist = m["artist"]
     title = m["title"]
-    params = [("title",title),("artist",artist)]
+    params = [("artist",artist),("title",title)]
     def update_song() =
       request(cmd="metadata",params=params)
     end
