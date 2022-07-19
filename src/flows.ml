@@ -1,14 +1,14 @@
-(* open Lwt *)
+open Lwt.Syntax
 open Cohttp
 open Cohttp_lwt_unix
 
 let port = 8080
 
 let server =
-  let callback _conn req _body =
+  let callback _conn req body =
     let uri = req |> Request.uri in
     let path = Uri.path uri in
-    (* let meth = req |> Request.meth in *)
+    let meth = req |> Request.meth in
     let headers = req |> Request.headers |> Header.to_list in
 
     (* Answer an authorization request. *)
@@ -37,7 +37,8 @@ let server =
         | _ -> unauthorized ()
     in
 
-    Printf.printf "Serving %s.\n%!" path;
+    let* body = Cohttp_lwt.Body.to_string body in
+    Printf.printf "Serving %s for %s: %s\n%!" path (Code.string_of_method meth) body;
 
     match path with
     | _ -> Server.respond_string ~status:`OK ~body:(Printf.sprintf "This is the page for %s." path) ()
