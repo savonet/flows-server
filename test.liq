@@ -2,6 +2,7 @@
 
 log.level.set(4)
 
-s = sine()
+s = playlist("~/Music")
+thread.run(every=2., s.skip)
 s = register_flow(server="http://localhost:8080/", radio="RADIO", website="web.site", description="rocking techno", genre="disco", streams=[], s)
-output.dummy(s)
+output.dummy(fallible=true, s)
