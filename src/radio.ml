@@ -53,7 +53,7 @@ let all_to_json () =
   db
   |> DB.to_seq
   |> Seq.map (fun (id,r) ->
-      let streams = `List (List.map (fun s -> `Tuple [`String s.format; `String s.url]) r.streams) in
+      let streams = `List (List.map (fun s -> `Assoc ["format", `String s.format; "url", `String s.url]) r.streams) in
       `Assoc
         [
           "token", `String id;
@@ -68,4 +68,4 @@ let all_to_json () =
     )
   |> List.of_seq
   |> fun l -> `List l
-  |> Yojson.Safe.pretty_to_string
+  |> Yojson.Basic.pretty_to_string
