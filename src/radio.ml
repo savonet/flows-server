@@ -33,7 +33,12 @@ let find_opt ~user ~radio =
   DB.find_opt db (id ~user ~radio)
 
 let set r =
-  DB.add db (id ~user:r.user ~radio:r.name) r
+  let radio_id r = id ~radio:r.name ~user:r.user in
+  DB.add db (radio_id r) r
+
+let ping r =
+  let r = {r with last = Unix.time ()} in
+  set r
 
 let clear_streams r =
   set {r with streams = []}

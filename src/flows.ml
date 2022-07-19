@@ -50,6 +50,8 @@ let server =
             let cmd = List.assoc "cmd" query in
             match cmd with
             | "ping radio" ->
+              let radio = get_radio () in
+              Radio.ping radio;
               Server.respond_string ~status:`OK ~body:"pong radio" ()
             | "add radio" ->
               let name = get_param "radio" in
