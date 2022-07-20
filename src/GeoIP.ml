@@ -28,5 +28,4 @@ let lookup_opt ip =
     )
   | _ -> None
 
-let () =
-  Printf.printf "lookup: %s\n%!" (lookup_string "80.60.233.195")
+(* let () = Printf.printf "lookup: %s\n%!" (lookup_string "80.60.233.195") *)
