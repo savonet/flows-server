@@ -14,6 +14,8 @@ type t = {
   website : string;
   description : string;
   genre : string;
+  longitude : float;
+  latitude : float;
   artist : string;
   title : string;
   streams : stream list;
@@ -27,6 +29,8 @@ let to_json r =
     "website", `String r.website;
     "description", `String r.description;
     "genre", `String r.genre;
+    "longitude", `Float r.longitude;
+    "latitude", `Float r.latitude;
     "artist", `String r.artist;
     "title", `String r.title;
     "streams", `List (List.map (fun s -> `Assoc ["format", `String s.format; "url", `String s.url]) r.streams);
@@ -54,6 +58,8 @@ let of_json = function
       website = List.assoc "website" l |> JSON.string;
       description = List.assoc "description" l |> JSON.string;
       genre = List.assoc "genre" l |> JSON.string;
+      longitude = List.assoc "longitude" l |> JSON.float;
+      latitude = List.assoc "latitude" l |> JSON.float;
       artist = List.assoc "artist" l |> JSON.string;
       title = List.assoc "title" l |> JSON.string;
       streams = List.assoc "streams" l |> streams;
@@ -66,9 +72,9 @@ let db = DB.create ~to_json ~of_json "radios"
 let id ~radio ~user = user ^ "/" ^ radio
 
 (** Register a radio. *)
-let register ~name ~user ~website ~description ~genre =
+let register ~name ~user ~website ~description ~genre ~longitude ~latitude =
   let last = Unix.time () in
-  let r = { name; user; website; description; genre; artist = "?"; title = "?"; streams = []; last } in
+  let r = { name; user; website; description; genre; longitude; latitude; artist = "?"; title = "?"; streams = []; last } in
   DB.add db (id ~radio:name ~user) r
 
 (** Find radio with given user and radio name. *)
@@ -114,6 +120,8 @@ let all_to_json () =
           "website", `String r.website;
           "description", `String r.description;
           "genre", `String r.genre;
+          "longitude", `Float r.longitude;
+          "latitude", `Float r.latitude;
           "streams", streams;
           "artist", `String r.artist;
           "title", `String r.title
