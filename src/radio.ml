@@ -1,7 +1,7 @@
 (** Operations on radios. *)
 
 (** A stream. *)
-type stream = { format : string; url : string }
+type stream = { format : string; url : string } [@@deriving yojson]
 
 (** A radio. *)
 type t = {
@@ -17,57 +17,53 @@ type t = {
   streams : stream list;
   last : float;  (** last update *)
 }
+[@@deriving yojson]
 
-let to_json r =
-  `Assoc
-    [
-      ("name", `String r.name);
-      ("user", `String r.user);
-      ("website", `String r.website);
-      ("description", `String r.description);
-      ("genre", `String r.genre);
-      ("longitude", `Float r.longitude);
-      ("latitude", `Float r.latitude);
-      ("artist", `String r.artist);
-      ("title", `String r.title);
-      ( "streams",
-        `List
-          (List.map
-             (fun s ->
-               `Assoc [("format", `String s.format); ("url", `String s.url)])
-             r.streams) );
-      ("last", `Float r.last);
-    ]
+(* Public radio payload *)
+module Public = struct
+  type t = {
+    id : string;
+    name : string;
+    website : string;
+    description : string;
+    genre : string;
+    longitude : float;
+    latitude : float;
+    artist : string;
+    title : string;
+    streams : stream list;
+  }
+  [@@deriving yojson]
+end
 
-let of_json = function
-  | `Assoc l ->
-      let streams = function
-        | `List l ->
-            List.map
-              (function
-                | `Assoc l ->
-                    {
-                      format = List.assoc "format" l |> JSON.string;
-                      url = List.assoc "url" l |> JSON.string;
-                    }
-                | _ -> assert false)
-              l
-        | _ -> assert false
-      in
-      {
-        name = List.assoc "name" l |> JSON.string;
-        user = List.assoc "user" l |> JSON.string;
-        website = List.assoc "website" l |> JSON.string;
-        description = List.assoc "description" l |> JSON.string;
-        genre = List.assoc "genre" l |> JSON.string;
-        longitude = List.assoc "longitude" l |> JSON.float;
-        latitude = List.assoc "latitude" l |> JSON.float;
-        artist = List.assoc "artist" l |> JSON.string;
-        title = List.assoc "title" l |> JSON.string;
-        streams = List.assoc "streams" l |> streams;
-        last = List.assoc "last" l |> JSON.float;
-      }
-  | _ -> assert false
+let to_json = yojson_of_t
+let of_json = t_of_yojson
+
+let to_public ~id
+    {
+      name;
+      website;
+      description;
+      genre;
+      longitude;
+      latitude;
+      artist;
+      title;
+      streams;
+      _
+    } =
+  {
+    Public.id;
+    name;
+    website;
+    description;
+    genre;
+    longitude;
+    latitude;
+    artist;
+    title;
+    streams;
+  }
 
 let db = DB.create ~to_json ~of_json "radios"
 let id ~radio ~user = user ^ "/" ^ radio
@@ -120,28 +116,6 @@ let all_to_json () =
   db |> DB.to_seq
   (* Forget radios not updated for more than 1h. *)
   |> Seq.filter (fun (_, r) -> now -. r.last <= 3600.)
-  |> Seq.map (fun (id, r) ->
-         (* Not using the default JSON exporter here, since we don't want to
-            mistakenly leak private data. *)
-         let streams =
-           `List
-             (List.map
-                (fun s ->
-                  `Assoc [("format", `String s.format); ("url", `String s.url)])
-                r.streams)
-         in
-         `Assoc
-           [
-             ("token", `String id);
-             ("name", `String r.name);
-             ("website", `String r.website);
-             ("description", `String r.description);
-             ("genre", `String r.genre);
-             ("longitude", `Float r.longitude);
-             ("latitude", `Float r.latitude);
-             ("streams", streams);
-             ("artist", `String r.artist);
-             ("title", `String r.title);
-           ])
+  |> Seq.map (fun (id, r) -> [%yojson_of: Public.t] (to_public ~id r))
   |> List.of_seq
   |> fun l -> `List l |> JSON.to_string ~pretty:true

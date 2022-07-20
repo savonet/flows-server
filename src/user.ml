@@ -8,24 +8,17 @@ type t = {
   last : float;  (** last login *)
 }
 
-let to_json u =
-  `Assoc
-    [
-      ("user", `String u.user);
-      ("pass", `String (Sha256.to_hex u.pass));
-      ("mail", `String u.mail);
-      ("last", `Float u.last);
-    ]
+(* See: https://github.com/janestreet/ppx_yojson_conv/issues/10 *)
+type _t = { _user : string; _pass : string; _mail : string; _last : float }
+[@@deriving yojson]
 
-let of_json = function
-  | `Assoc l ->
-      {
-        user = List.assoc "user" l |> JSON.string;
-        pass = List.assoc "pass" l |> JSON.string |> Sha256.of_hex;
-        mail = List.assoc "mail" l |> JSON.string;
-        last = List.assoc "last" l |> JSON.float;
-      }
-  | _ -> assert false
+let to_json { user; pass; mail; last } =
+  yojson_of__t
+    { _user = user; _pass = Sha256.to_hex pass; _mail = mail; _last = last }
+
+let of_json json =
+  let { _user; _pass; _mail; _last } = _t_of_yojson json in
+  { user = _user; pass = Sha256.of_hex _pass; mail = _mail; last = _last }
 
 let db = DB.create ~of_json ~to_json "users"
 

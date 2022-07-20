@@ -1,4 +1,4 @@
-include Yojson.Basic
+include Yojson.Safe
 
 let of_string = from_string
 

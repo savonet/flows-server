@@ -1,4 +1,6 @@
 (executable
  (name flows)
  (public_name flows)
+ (preprocess
+  (pps ppx_yojson_conv))
  (libraries lwt cohttp-lwt-unix sha yojson))

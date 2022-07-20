@@ -12,5 +12,6 @@
  (depends
    cohttp-lwt-unix
    sha
+   ppx_yojson_conv
    yojson)
 )
