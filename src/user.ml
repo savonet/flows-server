@@ -1,5 +1,16 @@
 (** Users. *)
 
+(* See: https://github.com/janestreet/ppx_yojson_conv/issues/10 *)
+module Wrapped = struct
+  type t = {
+    user : string;  (** user *)
+    pass : string;  (** encrypted password *)
+    mail : string;
+    last : float;  (** last login *)
+  }
+  [@@deriving yojson]
+end
+
 (** An user. *)
 type t = {
   user : string;  (** user *)
@@ -7,18 +18,13 @@ type t = {
   mail : string;
   last : float;  (** last login *)
 }
+[@@deriving stable_record ~version:Wrapped.t ~modify:[pass]]
 
-(* See: https://github.com/janestreet/ppx_yojson_conv/issues/10 *)
-type _t = { _user : string; _pass : string; _mail : string; _last : float }
-[@@deriving yojson]
-
-let to_json { user; pass; mail; last } =
-  yojson_of__t
-    { _user = user; _pass = Sha256.to_hex pass; _mail = mail; _last = last }
+let to_json user =
+  Wrapped.yojson_of_t (to_Wrapped_t user ~modify_pass:Sha256.to_hex)
 
 let of_json json =
-  let { _user; _pass; _mail; _last } = _t_of_yojson json in
-  { user = _user; pass = Sha256.of_hex _pass; mail = _mail; last = _last }
+  of_Wrapped_t (Wrapped.t_of_yojson json) ~modify_pass:Sha256.of_hex
 
 let db = DB.create ~of_json ~to_json "users"
 

@@ -3,22 +3,6 @@
 (** A stream. *)
 type stream = { format : string; url : string } [@@deriving yojson]
 
-(** A radio. *)
-type t = {
-  name : string;
-  user : string;
-  website : string;
-  description : string;
-  genre : string;
-  longitude : float;
-  latitude : float;
-  artist : string;
-  title : string;
-  streams : stream list;
-  last : float;  (** last update *)
-}
-[@@deriving yojson]
-
 (* Public radio payload *)
 module Public = struct
   type t = {
@@ -36,35 +20,25 @@ module Public = struct
   [@@deriving yojson]
 end
 
+(** A radio. *)
+type t = {
+  name : string;
+  user : string;
+  website : string;
+  description : string;
+  genre : string;
+  longitude : float;
+  latitude : float;
+  artist : string;
+  title : string;
+  streams : stream list;
+  last : float;  (** last update *)
+}
+[@@deriving
+  yojson, stable_record ~version:Public.t ~remove:[user; last] ~add:[id]]
+
 let to_json = yojson_of_t
 let of_json = t_of_yojson
-
-let to_public ~id
-    {
-      name;
-      website;
-      description;
-      genre;
-      longitude;
-      latitude;
-      artist;
-      title;
-      streams;
-      _
-    } =
-  {
-    Public.id;
-    name;
-    website;
-    description;
-    genre;
-    longitude;
-    latitude;
-    artist;
-    title;
-    streams;
-  }
-
 let db = DB.create ~to_json ~of_json "radios"
 let id ~radio ~user = user ^ "/" ^ radio
 
@@ -116,6 +90,6 @@ let all_to_json () =
   db |> DB.to_seq
   (* Forget radios not updated for more than 1h. *)
   |> Seq.filter (fun (_, r) -> now -. r.last <= 3600.)
-  |> Seq.map (fun (id, r) -> [%yojson_of: Public.t] (to_public ~id r))
+  |> Seq.map (fun (id, r) -> [%yojson_of: Public.t] (to_Public_t ~id r))
   |> List.of_seq
   |> fun l -> `List l |> JSON.to_string ~pretty:true
