@@ -62,7 +62,12 @@ let server =
               let website = get_param "website" in
               let description = get_param "description" in
               let genre = get_param "genre" in
-              let longitude, latitude = 0., 0. in
+              let geoip = GeoIP.lookup_opt ip in
+              let latitude, longitude =
+                match geoip with
+                | Some geoip -> geoip.latitude, geoip.longitude
+                | None -> 0., 0.
+              in
               Radio.register ~name ~website ~user ~description ~genre ~longitude ~latitude;
               ok ()
             | "clear streams" ->
