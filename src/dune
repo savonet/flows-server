@@ -1,5 +1,4 @@
 (executable
  (name flows)
  (public_name flows)
- (libraries lwt cohttp-lwt-unix sha yojson)
-)
+ (libraries lwt cohttp-lwt-unix sha yojson))
