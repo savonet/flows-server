@@ -13,7 +13,7 @@
 #                 and the url of the stream. The format should be \
 #                 of the form "ogg/128k" consisting of the codec and \
 #                 the bitrate, separated by "/".
-def register_flow(~server="",~user="default",~password="default",
+def register_flow(~server="",~user=null(),~password="default",
                   ~mail="",~radio,~website,~description,~genre,
                   ~streams,s)
 
@@ -35,24 +35,17 @@ def register_flow(~server="",~user="default",~password="default",
   # Initial variables
   ping_period = 600. # Pinging period in seconds
 
-  # Fix default parameters and set request function.
-  base_params = [("v", "0.1"),
-                 ("user",user),
-                 ("password",password),
-                 ("mail",mail),
-                 ("radio",radio)]
   def request(cmd, params) =
-    cmd = params.{command = cmd}
+    cmd = params.{command = cmd, version = "0.1", user=user, password=password, mail=mail, radio=radio}
     log = fun(~level, s) -> log(label=radio, level=level, s)
     log(level=4,"Processing command #{string_of(cmd)}")
 
     let json.stringify data = cmd
 
     # TODO: do something with errors!
-    answer = http.post(data=data, url)
+    answer = http.post(data=data, server)
     log(level=4,"Response status: #{answer.protocol_version} #{answer.status_code} #{answer.status_message}")
-    log(level=4,"Response headers:")
-    list.iter(log_arg,answer.headers)
+    log(level=4,"Response headers: #{answer.headers}")
     log(level=4,"Response content: #{answer}")
   end
 
@@ -61,7 +54,7 @@ def register_flow(~server="",~user="default",~password="default",
 
   # Ping
   def ping() =
-    ignore(request("ping radio", ()))
+    ignore(request("ping radio", {}))
   end
   thread.run(fast=false, every=ping_period, ping)
 
@@ -77,14 +70,9 @@ def register_flow(~server="",~user="default",~password="default",
 
   # Metadata update
   def metadata(m) =
-    # artist = m["artist"]
-    # title = m["title"]
-    # params = [("artist",artist),("title",title)]
-    # def update_song() =
-      # request(cmd="metadata",params=params)
-    # end
-      # thread.run(update_song)
-      ()
+    artist = m["artist"]
+    title  = m["title"]
+    thread.run({request("metadata",{artist=artist, title=title})})
   end
   source.on_metadata(s, metadata)
 end

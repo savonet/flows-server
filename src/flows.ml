@@ -23,7 +23,7 @@ let server =
           match v with [v] -> Some (k, v) | _ -> None)
     in
     let meth = req |> Request.meth in
-    let headers = req |> Request.headers |> Header.to_list in
+    let _headers = req |> Request.headers |> Header.to_list in
 
     Printf.printf "Serving %s %s for %s.\n%!"
       (Code.string_of_method meth)
@@ -53,6 +53,7 @@ let server =
                 let user =
                   match get_param_opt "user" with
                   | Some (`String u) -> Some u
+                  | Some `Null -> None
                   | Some _ -> failwith "Invalid user format."
                   | None -> None
                 in
