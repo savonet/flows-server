@@ -39,7 +39,7 @@ type t = {
 
 let to_json = yojson_of_t
 let of_json = t_of_yojson
-let db = DB.create ~to_json ~of_json "radios"
+let db = DB.create ~every:60. ~to_json ~of_json "radios"
 let id ~radio ~user = user ^ "/" ^ radio
 
 (** Register a radio. *)

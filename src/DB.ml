@@ -6,20 +6,17 @@ type 'a t = {
   to_json : 'a -> JSON.t;
   of_json : JSON.t -> 'a;
   mutable table : (string * 'a) list;
-  m : Mutex.t;
+  save_every : float; (** wait at least for this number of seconds before saving *)
+  mutable save_last : float; (** when we last saved *)
+  mutex_table : Mutex.t;
+  mutex_file : Mutex.t;
 }
 
 let filename db = db.name ^ ".db"
 
-let mutexify db f x =
-  Mutex.lock db.m;
-  let y = f x in
-  Mutex.unlock db.m;
-  y
-
 (** Create a database. *)
-let create ~to_json ~of_json name =
-  let db = { name; to_json; of_json; table = []; m = Mutex.create () } in
+let create ~to_json ~of_json ?(every=0.) name =
+  let db = { name; to_json; of_json; table = []; save_every = every; save_last = 0.; mutex_table = Mutex.create (); mutex_file = Mutex.create () } in
   let filename = filename db in
   if Sys.file_exists filename then (
     let ic = open_in filename in
@@ -37,18 +34,27 @@ let create ~to_json ~of_json name =
 (** Add an entry to the database. Any previous value associated to the key is
     removed. *)
 let add db k v =
-  mutexify db
-    (fun () ->
-      let table = List.remove_assoc k db.table in
-      db.table <- (k, v) :: table;
+  let table =
+    Mutex.lock db.mutex_table;
+    let table = List.remove_assoc k db.table in
+    db.table <- (k, v) :: table;
+    db.table
+  in
+  Mutex.unlock db.mutex_table;
+  let now = Unix.time () in
+  if now -. db.save_last >= db.save_every then
+    (
+      Mutex.lock db.mutex_file;
       let oc = open_out (filename db) in
-      `Assoc (List.map (fun (k, v) -> (k, db.to_json v)) db.table)
+      `Assoc (List.map (fun (k, v) -> (k, db.to_json v)) table)
       |> JSON.to_string |> output_string oc;
-      close_out oc)
-    ()
+      close_out oc;
+      db.save_last <- now;
+      Mutex.unlock db.mutex_file
+    )
 
 (** Find an entry. *)
-let find_opt db k = mutexify db (fun k -> List.assoc_opt k db.table) k
+let find_opt db k = List.assoc_opt k db.table
 
 (** Iterator over database. *)
 let to_seq db = List.to_seq db.table
