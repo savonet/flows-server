@@ -42,9 +42,9 @@ let add db k v =
   in
   Mutex.unlock db.mutex_table;
   let now = Unix.time () in
+  Mutex.lock db.mutex_file;
   if now -. db.save_last >= db.save_every then
     (
-      Mutex.lock db.mutex_file;
       let oc = open_out (filename db) in
       `Assoc (List.map (fun (k, v) -> (k, db.to_json v)) table)
       |> JSON.to_string |> output_string oc;
@@ -52,6 +52,8 @@ let add db k v =
       db.save_last <- now;
       Mutex.unlock db.mutex_file
     )
+  else
+    Mutex.unlock db.mutex_file
 
 (** Find an entry. *)
 let find_opt db k = List.assoc_opt k db.table
