@@ -7,6 +7,7 @@ let port = 8080
 exception Invalid_password of string
 exception Invalid_radio of string
 exception Missing_parameter of string
+exception Invalid_parameter of string
 
 let server =
   let callback conn req body =
@@ -54,7 +55,7 @@ let server =
                   match get_param_opt "user" with
                   | Some (`String u) -> Some u
                   | Some `Null -> None
-                  | Some _ -> failwith "Invalid user format."
+                  | Some _ -> raise (Invalid_parameter "user")
                   | None -> None
                 in
                 if user <> None then
@@ -89,18 +90,21 @@ let server =
                       | Some geoip -> (geoip.latitude, geoip.longitude)
                       | None -> (0., 0.)
                     in
-                    Radio.register ~name ~website ~user ~description ~genre
-                      ~longitude ~latitude;
-                    ok ()
-                  | "clear streams" ->
-                    let radio = get_radio () in
-                    Radio.clear_streams radio;
-                    ok ()
-                  | "add stream" ->
-                    let radio = get_radio () in
-                    let format = get_param_string "format" in
-                    let url = get_param_string "url" in
-                    Radio.add_stream radio ~format ~url;
+                    let streams =
+                      match get_param_opt "streams" with
+                      | None -> raise (Missing_parameter "streams")
+                      | Some (`List l) ->
+                        List.map
+                          (function
+                            | `Assoc s ->
+                              let format = List.assoc "format" s |> JSON.string in
+                              let url = List.assoc "url" s |> JSON.string in
+                              { Radio.format; url }
+                            | _ -> raise (Invalid_parameter "streams")
+                          ) l
+                      | Some _ -> raise (Invalid_parameter "streams")
+                    in
+                    Radio.register ~name ~website ~user ~description ~genre ~longitude ~latitude ~streams;
                     ok ()
                   | "metadata" ->
                     let radio = get_radio () in
@@ -131,6 +135,10 @@ let server =
     | Missing_parameter p ->
       Server.respond_string ~status:(`Code 400)
         ~body:(Printf.sprintf "Missing parameter: %s." p)
+        ()
+    | Invalid_parameter p ->
+      Server.respond_string ~status:(`Code 400)
+        ~body:(Printf.sprintf "Invalid parameter: %s." p)
         ()
     | Invalid_radio r ->
       Server.respond_string ~status:(`Code 400)

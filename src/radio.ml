@@ -46,7 +46,7 @@ let id ~radio ~user =
   | None -> radio
 
 (** Register a radio. *)
-let register ~name ~user ~website ~description ~genre ~longitude ~latitude =
+let register ~name ~user ~website ~description ~genre ~longitude ~latitude ~streams =
   let last = Unix.time () in
   let r =
     {
@@ -59,7 +59,7 @@ let register ~name ~user ~website ~description ~genre ~longitude ~latitude =
       latitude;
       artist = "?";
       title = "?";
-      streams = [];
+      streams;
       last;
     }
   in
@@ -76,13 +76,6 @@ let set r =
 let ping r =
   let r = { r with last = Unix.time () } in
   set r
-
-(** Remove all streams for radio. *)
-let clear_streams r = set { r with streams = [] }
-
-(** Add a stream for radio. *)
-let add_stream r ~format ~url =
-  set { r with streams = { format; url } :: r.streams }
 
 (** Set metadata of the currently playing title. *)
 let set_metadata r ~artist ~title = set { r with artist; title }
