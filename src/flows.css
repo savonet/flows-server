@@ -2,18 +2,10 @@ body {
     font-family: Futura,Trebuchet MS,Arial,sans-serif;
     max-width: 80ex;
     margin: 5ex auto;
-}
-
-body::before {    
-      content: "";
-      background-image: url('https://picsum.photos/640/360/?blur=10');
-      background-size: cover;
-      position: absolute;
-      top: 0px;
-      right: 0px;
-      bottom: 0px;
-      left: 0px;
-      opacity: 0.3;
+    background-image: url(https://picsum.photos/id/100/640/360/?blur=10);
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: cover;
 }
 
 h1 {
