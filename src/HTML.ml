@@ -7,11 +7,12 @@ let w ?(nl=true) (h:t) =
        h := !h ^ s
     )
 
-let create ?title () : t =
+let create ?title ?css () : t =
   let h = ref "" in
   w h "<html>";
   w h "<head>";
   w h "<meta charset=\"UTF-8\">";
+  if css <> None then w h "<link rel=\"stylesheet\" href=\"%s\"/>" (Option.get css);
   if title <> None then w h "<title>%s</title>" (Option.get title);
   w h "</head>";
   w h "<body>";

@@ -120,7 +120,7 @@ let server =
               | _ -> failwith "Invalid JSON."
             )
           | `GET ->
-            let h = HTML.create ~title:"Liquidsoap radios" () in
+            let h = HTML.create ~css:"flows.css" ~title:"Liquidsoap radios" () in
             HTML.h1 h "Liquidsoap radios";
             HTML.ul h
               (Radio.to_list () |> List.sort (fun (_,r) (_,r') -> int_of_float (r'.Radio.last -. r.Radio.last)) |> List.map
@@ -131,6 +131,7 @@ let server =
             Server.respond_string ~status:`OK ~body:(HTML.to_string h) ()
           | _ -> failwith "Invalid method."
         )
+      | "/flows.css" -> Server.respond_file ~fname:"flows.css" ()
       | "/radios" ->
         let body = Radio.all_to_json () in
         Server.respond_string ~status:`OK ~body ()

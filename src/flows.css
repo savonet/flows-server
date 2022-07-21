@@ -1,0 +1,22 @@
+body {
+    font-family: Futura,Trebuchet MS,Arial,sans-serif;
+    max-width: 80ex;
+    margin: 5ex auto;
+    background-image: url(https://picsum.photos/640/360/?blur=10);
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+h1 {
+    font-size: 30pt;
+    text-align: center;
+}
+
+a {
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
