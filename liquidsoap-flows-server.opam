@@ -8,9 +8,9 @@ authors: ["Samuel Mimram <smimram@gmail.com>"]
 depends: [
   "dune" {>= "2.0"}
   "cohttp-lwt-unix"
-  "sha"
   "ppx_yojson_conv"
   "ppx_stable"
+  "sha"
   "yojson"
 ]
 build: [
