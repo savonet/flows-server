@@ -119,7 +119,11 @@ let server =
                 )
               | _ -> failwith "Invalid JSON."
             )
-          | `GET -> ok ()
+          | `GET ->
+            let h = HTML.create ~title:"Liquidsoap radios" () in
+            HTML.h1 h "Liquidsoap radios";
+            HTML.ul h (Radio.to_seq () |> Seq.map (fun (_,r) -> Printf.sprintf "<a href=\"%s\">%s</a>: %s (▶ <em>%s</em> by %s)" r.Radio.website r.name r.description r.title r.artist) |> List.of_seq);
+            Server.respond_string ~status:`OK ~body:(HTML.to_string h) ()
           | _ -> failwith "Invalid method."
         )
       | "/radios" ->

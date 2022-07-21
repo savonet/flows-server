@@ -58,5 +58,7 @@ let add db k v =
 (** Find an entry. *)
 let find_opt db k = M.find_opt k db.table
 
+let iter db f = M.iter f db.table
+
 (** Iterator over database. *)
 let to_seq db = M.to_seq db.table

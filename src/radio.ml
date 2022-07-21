@@ -80,12 +80,17 @@ let ping r =
 (** Set metadata of the currently playing title. *)
 let set_metadata r ~artist ~title = set { r with artist; title }
 
-(** Export all radios to JSON. *)
-let all_to_json () =
+let to_seq () =
   let now = Unix.time () in
-  db |> DB.to_seq
+  DB.to_seq db
   (* Forget radios not updated for more than 1h. *)
   |> Seq.filter (fun (_, r) -> now -. r.last <= 3600.)
+
+(** Export all radios to JSON. *)
+let all_to_json () =
+  to_seq ()
   |> Seq.map (fun (id, r) -> [%yojson_of: Public.t] (to_Public_t ~id r))
   |> List.of_seq
   |> fun l -> `List l |> JSON.to_string ~pretty:true
+
+let iter = DB.iter db
