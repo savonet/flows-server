@@ -41,27 +41,15 @@ def register_flow(~server="",~user="default",~password="default",
                  ("password",password),
                  ("mail",mail),
                  ("radio",radio)]
-  def request(~cmd, ~params) =
+  def request(cmd, params) =
+    cmd = params.{command = cmd}
     log = fun(~level, s) -> log(label=radio, level=level, s)
-    log(level=4,"Processing command #{cmd} with arguments:")
-    def log_arg(x) =
-      let (label, value) = x
-      log(level=4,"  #{label}: #{value}")
-    end
-    list.iter(log_arg,params)
+    log(level=4,"Processing command #{string_of(cmd)}")
 
-    cmd = url.encode(cmd)
-    params = list.append(base_params,params)
-    def f(z) =
-      let (x, y) = z
-      y = url.encode(y)
-      "#{x}=#{y}"
-    end
-    params = string.concat(separator="&", list.map(f,params))
-    url = "#{server}?cmd=#{cmd}&#{params}"
+    let json.stringify data = cmd
 
     # TODO: do something with errors!
-    answer = http.get(url)
+    answer = http.post(data=data, url)
     log(level=4,"Response status: #{answer.protocol_version} #{answer.status_code} #{answer.status_message}")
     log(level=4,"Response headers:")
     list.iter(log_arg,answer.headers)
@@ -69,35 +57,34 @@ def register_flow(~server="",~user="default",~password="default",
   end
 
   # Register radio
-  params = [("website",    website),
-            ("description",description),
-            ("genre",      genre)]
-  request(cmd="add radio", params=params)
+  request("add radio", {website=website, description=description, genre=genre})
 
   # Ping
   def ping() =
-    ignore(request(cmd="ping radio", params=[]))
+    ignore(request("ping radio", ()))
   end
   thread.run(fast=false, every=ping_period, ping)
 
   # Register streams
   def register_stream(format_url)
-    let (format, url) = format_url
-    params = [("format",format), ("url",url)]
-    request(cmd="add stream", params=params)
+    # let (format, url) = format_url
+    # params = [("format",format), ("url",url)]
+    # request(cmd="add stream", params=params)
+    ()
   end
-  request(cmd="clear streams",params=[])
+  # request(cmd="clear streams",params=[])
   list.iter(register_stream,streams)
 
   # Metadata update
   def metadata(m) =
-    artist = m["artist"]
-    title = m["title"]
-    params = [("artist",artist),("title",title)]
-    def update_song() =
-      request(cmd="metadata",params=params)
-    end
-    thread.run(update_song)
+    # artist = m["artist"]
+    # title = m["title"]
+    # params = [("artist",artist),("title",title)]
+    # def update_song() =
+      # request(cmd="metadata",params=params)
+    # end
+      # thread.run(update_song)
+      ()
   end
   source.on_metadata(s, metadata)
 end

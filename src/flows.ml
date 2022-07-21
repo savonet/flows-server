@@ -25,12 +25,6 @@ let server =
     let meth = req |> Request.meth in
     let headers = req |> Request.headers |> Header.to_list in
 
-    let user, pass =
-      match Option.map Auth.credential_of_string (List.assoc_opt "Authorization" headers) with
-      | Some (`Basic (user, pass)) -> Some user, pass
-      | _ -> None, ""
-    in
-
     Printf.printf "Serving %s %s for %s.\n%!"
       (Code.string_of_method meth)
       path ip;
@@ -42,13 +36,6 @@ let server =
 
     let ok () = Server.respond_string ~status:`OK ~body:"Done." () in
     try
-      if user <> None then
-        (
-          let user = Option.get user in
-          let mail = "" in (* TODO *)
-          if not (User.valid_or_register ~user ~pass ~mail) then
-            raise (Invalid_password user)
-        );
       match path with
       | "/" ->
         (
@@ -57,15 +44,26 @@ let server =
             (
               match JSON.of_string body with
               | `Assoc params ->
-                let get_param ?default k =
-                  match List.assoc_opt k params with
-                  | Some v -> v
-                  | None -> (
-                      match default with
-                      | Some v -> v
-                      | None -> raise (Missing_parameter k))
+                let get_param_opt k = List.assoc_opt k params in
+                let get_param_string k =
+                  match get_param_opt k with
+                  | Some p -> JSON.string p
+                  | None -> raise (Missing_parameter k)
                 in
-                let get_param_string ?default k = get_param ?default k |> JSON.string in
+                let user =
+                  match get_param_opt "user" with
+                  | Some (`String u) -> Some u
+                  | Some _ -> failwith "Invalid user format."
+                  | None -> None
+                in
+                if user <> None then
+                  (
+                    let user = Option.get user in
+                    let pass = get_param_string "password" in
+                    let mail = get_param_string "mail" in
+                    if not (User.valid_or_register ~user ~pass ~mail) then
+                      raise (Invalid_password user)
+                  );
                 let get_radio () =
                   let radio = get_param_string "radio" in
                   match Radio.find_opt ~user ~radio with
