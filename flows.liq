@@ -13,22 +13,22 @@
 #                 and the url of the stream. The format should be \
 #                 of the form "ogg/128k" consisting of the codec and \
 #                 the bitrate, separated by "/".
-def register_flow(~server="",~user=null(),~password="default",
+def register_flow(~server=null(),~user=null(),~password="default",
                   ~mail="",~radio,~website,~description,~genre,
                   ~streams,s)
 
-  # If the server is "", we get the server from sf.net
+  # Get default value for server
   server =
-    if server == "" then
-      let data = http.get("http://liquidsoap.info/flows_server")
+    if null.defined(server) then
+      null.get(server)
+    else
+      let data = http.get("http://www.liquidsoap.info/flows_server")
       if data.status_code == 200 then
         data
       else
         # If sf is down, we use the hardcoded server
         "http://savonet.rastageeks.org/liqflows.py"
       end
-    else
-      server
     end
   log(level=4,"Flows server: #{server}")
 
@@ -40,8 +40,7 @@ def register_flow(~server="",~user=null(),~password="default",
     log = fun(~level, s) -> log(label=radio, level=level, s)
     log(level=4,"Processing command #{string_of(cmd)}")
 
-    let json.stringify data = cmd
-
+    data = json.stringify(cmd)
     # TODO: do something with errors!
     answer = http.post(data=data, server)
     log(level=4,"Response status: #{answer.protocol_version} #{answer.status_code} #{answer.status_message}")
@@ -50,7 +49,8 @@ def register_flow(~server="",~user=null(),~password="default",
   end
 
   # Register radio
-  request("add radio", {website=website, description=description, genre=genre})
+  streams = list.map(fun(s) -> {format=fst(s), url=snd(s)}, streams)
+  request("add radio", {website=website, description=description, genre=genre, streams=streams})
 
   # Ping
   def ping() =
