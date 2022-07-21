@@ -11,8 +11,8 @@
  (description "This server allows registering Liquidsoap radios using the flows protocol.")
  (depends
    cohttp-lwt-unix
-   sha
    ppx_yojson_conv
    ppx_stable
+   sha
    yojson)
 )
