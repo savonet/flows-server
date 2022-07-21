@@ -122,7 +122,12 @@ let server =
           | `GET ->
             let h = HTML.create ~title:"Liquidsoap radios" () in
             HTML.h1 h "Liquidsoap radios";
-            HTML.ul h (Radio.to_seq () |> Seq.map (fun (_,r) -> Printf.sprintf "<a href=\"%s\">%s</a>: %s (▶ <em>%s</em> by %s)" r.Radio.website r.name r.description r.title r.artist) |> List.of_seq);
+            HTML.ul h
+              (Radio.to_list () |> List.sort (fun (_,r) (_,r') -> int_of_float (r'.Radio.last -. r.Radio.last)) |> List.map
+                 (fun (_,r) ->
+                    let streams = List.map (fun s -> Printf.sprintf "📻 <a href=\"%s\">%s</a>" s.Radio.url s.format) r.Radio.streams |> String.concat ", " in
+                    Printf.sprintf "<a href=\"%s\">%s</a>: %s (%s)<br/>▶ <em>%s</em> by %s" r.Radio.website r.name r.description streams r.title r.artist
+                 ));
             Server.respond_string ~status:`OK ~body:(HTML.to_string h) ()
           | _ -> failwith "Invalid method."
         )

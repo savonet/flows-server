@@ -86,6 +86,8 @@ let to_seq () =
   (* Forget radios not updated for more than 1h. *)
   |> Seq.filter (fun (_, r) -> now -. r.last <= 3600.)
 
+let to_list () = to_seq () |> List.of_seq
+
 (** Export all radios to JSON. *)
 let all_to_json () =
   to_seq ()
