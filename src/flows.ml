@@ -154,6 +154,10 @@ let server =
       Server.respond_string ~status:(`Code 400)
         ~body:(Printf.sprintf "Unknown radio: %s." r)
         ()
+    | Failure s ->
+      Server.respond_string ~status:(`Code 500)
+        ~body:(Printf.sprintf "Failure: %s." s)
+        ()
     | e ->
       Server.respond_string ~status:(`Code 500)
         ~body:
