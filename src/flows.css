@@ -40,7 +40,7 @@ a:hover {
 
 .radio img:hover {
     filter: blur(3px);
-    }
+}
 
 .radio .name {
     font-weight: bold;
