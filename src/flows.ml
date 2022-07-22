@@ -1,6 +1,7 @@
 open Lwt.Syntax
 open Cohttp
 open Cohttp_lwt_unix
+open Extlib
 
 let port = 8080
 
@@ -125,8 +126,8 @@ let server =
             HTML.h1 h "Liquidsoap radios";
             let radios =
               Radio.to_list ()
-              |> List.sort (fun (_,r) (_,r') -> int_of_float (r'.Radio.last -. r.Radio.last))
-              (* |> List.shuffle *)
+              (* |> List.sort (fun (_,r) (_,r') -> int_of_float (r'.Radio.last -. r.Radio.last)) *)
+              |> List.shuffle
             in
             HTML.w h {|
 <script type="text/javascript">
