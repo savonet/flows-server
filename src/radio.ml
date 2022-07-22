@@ -27,6 +27,7 @@ type t = {
   website : string;
   description : string;
   genre : string;
+  logo : string; (** url of the logo *)
   longitude : float;
   latitude : float;
   artist : string;
@@ -35,7 +36,7 @@ type t = {
   last : float;  (** last update *)
 }
 [@@deriving
-  yojson, stable_record ~version:Public.t ~remove:[user; last] ~add:[id]]
+  yojson, stable_record ~version:Public.t ~remove:[user; last; logo] ~add:[id]]
 
 let to_json = yojson_of_t
 let of_json = t_of_yojson
@@ -46,7 +47,7 @@ let id ~radio ~user =
   | None -> radio
 
 (** Register a radio. *)
-let register ~name ~user ~website ~description ~genre ~longitude ~latitude ~streams =
+let register ~name ~user ~website ~description ~genre ?(logo="") ~longitude ~latitude ~streams () =
   let last = Unix.time () in
   let r =
     {
@@ -55,6 +56,7 @@ let register ~name ~user ~website ~description ~genre ~longitude ~latitude ~stre
       website;
       description;
       genre;
+      logo;
       longitude;
       latitude;
       artist = "?";

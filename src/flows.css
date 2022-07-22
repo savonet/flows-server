@@ -20,3 +20,32 @@ a {
 a:hover {
     text-decoration: underline;
 }
+
+.player {
+    display: block;
+    text-align: center;
+    margin: 30px 0;
+}
+
+.radio {
+    display: inline-block;
+    margin: 5px;
+    text-align: center;
+}
+
+.radio img {
+    width: 200;
+    height: 200;
+}
+
+.radio img:hover {
+    filter: blur(3px);
+    }
+
+.radio .name {
+    font-weight: bold;
+}
+
+.radio .title {
+    font-style: italic;
+}

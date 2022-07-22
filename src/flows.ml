@@ -104,7 +104,7 @@ let server =
                           ) l
                       | Some _ -> raise (Invalid_parameter "streams")
                     in
-                    Radio.register ~name ~website ~user ~description ~genre ~longitude ~latitude ~streams;
+                    Radio.register ~name ~website ~user ~description ~genre ~longitude ~latitude ~streams ();
                     ok ()
                   | "metadata" ->
                     let radio = get_radio () in
@@ -122,12 +122,45 @@ let server =
           | `GET ->
             let h = HTML.create ~css:"flows.css" ~title:"Liquidsoap radios" () in
             HTML.h1 h "Liquidsoap radios";
+            let radios = Radio.to_list () |> List.sort (fun (_,r) (_,r') -> int_of_float (r'.Radio.last -. r.Radio.last)) in
+            HTML.w h {|
+<script type="text/javascript">
+function play(stream)
+{ 
+  player = document.getElementById("player");
+  player.pause();
+  player.setAttribute('src', stream);
+  player.load();
+  player.play();
+}
+</script>
+<div class="player">
+<audio id="player" controls><source src="" type="audio/mpeg"></audio>
+</div>
+|};
+            (* Nice *)
+            HTML.h2 h "Your radios";
+            List.iter
+              (fun (_,(r:Radio.t)) ->
+                 let logo = if r.logo = "" then "https://picsum.photos/id/1/250/250/" else r.logo in
+                 let stream = if r.streams = [] then "" else (List.hd r.streams).url in
+                 HTML.w ~nl:false h {|
+<div class="radio">
+<img src="%s" onclick="play(%s)"/>
+<div class="name">%s</div>
+<div class="artist">%s</div>
+<div class="title">%s</div>
+</div>
+|} logo stream r.name r.artist r.title
+              ) radios;
+            (* Basic *)
+            HTML.h2 h "Details about streams";
             HTML.ul h
-              (Radio.to_list () |> List.sort (fun (_,r) (_,r') -> int_of_float (r'.Radio.last -. r.Radio.last)) |> List.map
+              (List.map
                  (fun (_,r) ->
                     let streams = List.map (fun s -> Printf.sprintf "📻 <a href=\"%s\">%s</a>" s.Radio.url s.format) r.Radio.streams |> String.concat ", " in
                     Printf.sprintf "<a href=\"%s\">%s</a>: %s (%s)<br/>▶ <em>%s</em> by %s" r.Radio.website r.name r.description streams r.title r.artist
-                 ));
+                 ) radios);
             Server.respond_string ~status:`OK ~body:(HTML.to_string h) ()
           | _ -> failwith "Invalid method."
         )

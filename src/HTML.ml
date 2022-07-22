@@ -18,7 +18,13 @@ let create ?title ?css () : t =
   w h "<body>";
   h
 
+let div h ?cls s =
+  let cls = match cls with Some c -> Printf.sprintf " class=\"%s\"" c | None -> "" in
+  w h "<div%s>%s</div>" cls s
+
 let h1 h = w h "<h1>%s</h1>"
+
+let h2 h = w h "<h2>%s</h2>"
 
 let ul h l =
   w h "<ul>";

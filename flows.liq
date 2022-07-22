@@ -2,6 +2,8 @@
 # - Check for errors
 # - Unregister radio and streams
 
+flows = ()
+
 # Register a radio on Liquidsoap Flows.
 # @category Liquidsoap
 # @param ~radio   Name of the radio.
@@ -13,7 +15,7 @@
 #                 and the url of the stream. The format should be \
 #                 of the form "ogg/128k" consisting of the codec and \
 #                 the bitrate, separated by "/".
-def register_flow(~server=null(),~user=null(),~password="default",
+def flows.register(~server=null(),~user=null(),~password="default",
                   ~mail="",~radio,~website,~description,~genre,
                   ~streams,s)
 
