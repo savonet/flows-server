@@ -31,6 +31,7 @@ a:hover {
     display: inline-block;
     margin: 5px;
     text-align: center;
+    width: 200px;
 }
 
 .radio img {
