@@ -47,7 +47,7 @@ let id ~radio ~user =
   | None -> radio
 
 (** Register a radio. *)
-let register ~name ~user ~website ~description ~genre ?(logo="") ~longitude ~latitude ~streams () =
+let register ~name ~user ~website ~description ~genre ~logo ~longitude ~latitude ~streams () =
   let last = Unix.time () in
   let r =
     {

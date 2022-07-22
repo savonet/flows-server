@@ -8,4 +8,5 @@ s = flows.register(server="http://localhost:8080/", radio="RADIO", website="web.
 output.dummy(fallible=true, s)
 
 
-output.dummy(flows.register(server="http://localhost:8080/", radio="2nd radio", website="blabla.com", description="techno", genre="disco", streams=[], blank()))
+output.dummy(flows.register(server="http://localhost:8080/", radio="FIP", website="blabla.com", description="techno", genre="disco", logo="https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/FIP_logo_2021.svg/1200px-FIP_logo_2021.svg.png", streams=[("mp3","http://icecast.radiofrance.fr/fip-midfi.mp3")], blank()))
+output.dummy(flows.register(server="http://localhost:8080/", radio="France inter", website="blabla.com", description="techno", genre="disco", logo="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/France_Inter_logo_2021.svg/640px-France_Inter_logo_2021.svg.png", streams=[("mp3","http://direct.franceinter.fr/live/franceinter-midfi.aac")], blank()))

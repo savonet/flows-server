@@ -10,13 +10,14 @@ flows = ()
 # @param ~website URL of the website of the radio.
 # @param ~description Description of the radio.
 # @param ~genre   Genre of the radio (rock or rap or etc.).
+# @param ~logo    Logo of the radio (in square format, roughly 200×200).
 # @param ~streams List of streams for the radio described by \
 #                 a pair of strings consisting of the format of the stream \
 #                 and the url of the stream. The format should be \
 #                 of the form "ogg/128k" consisting of the codec and \
 #                 the bitrate, separated by "/".
 def flows.register(~server=null(),~user=null(),~password="default",
-                  ~mail="",~radio,~website,~description,~genre,
+                  ~mail="",~radio,~website,~description,~genre,~logo="",
                   ~streams,s)
 
   # Get default value for server
@@ -52,7 +53,7 @@ def flows.register(~server=null(),~user=null(),~password="default",
 
   # Register radio
   streams = list.map(fun(s) -> {format=fst(s), url=snd(s)}, streams)
-  request("add radio", {website=website, description=description, genre=genre, streams=streams})
+  request("add radio", {website=website, description=description, genre=genre, logo=logo, streams=streams})
 
   # Ping
   def ping() =

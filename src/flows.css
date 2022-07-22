@@ -34,8 +34,9 @@ a:hover {
 }
 
 .radio img {
-    width: 200;
-    height: 200;
+    width: 200px;
+    height: 200px;
+    border-radius: 10px;
 }
 
 .radio img:hover {

@@ -84,6 +84,7 @@ let server =
                     let website = get_param_string "website" in
                     let description = get_param_string "description" in
                     let genre = get_param_string "genre" in
+                    let logo = get_param_string "logo" in
                     let geoip = GeoIP.lookup_opt ip in
                     let latitude, longitude =
                       match geoip with
@@ -104,7 +105,7 @@ let server =
                           ) l
                       | Some _ -> raise (Invalid_parameter "streams")
                     in
-                    Radio.register ~name ~website ~user ~description ~genre ~longitude ~latitude ~streams ();
+                    Radio.register ~name ~website ~user ~description ~genre ~logo ~longitude ~latitude ~streams ();
                     ok ()
                   | "metadata" ->
                     let radio = get_radio () in
@@ -122,7 +123,11 @@ let server =
           | `GET ->
             let h = HTML.create ~css:"flows.css" ~title:"Liquidsoap radios" () in
             HTML.h1 h "Liquidsoap radios";
-            let radios = Radio.to_list () |> List.sort (fun (_,r) (_,r') -> int_of_float (r'.Radio.last -. r.Radio.last)) in
+            let radios =
+              Radio.to_list ()
+              |> List.sort (fun (_,r) (_,r') -> int_of_float (r'.Radio.last -. r.Radio.last))
+              (* |> List.shuffle *)
+            in
             HTML.w h {|
 <script type="text/javascript">
 function play(stream)
@@ -146,7 +151,7 @@ function play(stream)
                  let stream = if r.streams = [] then "" else (List.hd r.streams).url in
                  HTML.w ~nl:false h {|
 <div class="radio">
-<img src="%s" onclick="play(%s)"/>
+<img src="%s" onclick='play("%s");'>
 <div class="name">%s</div>
 <div class="artist">%s</div>
 <div class="title">%s</div>
