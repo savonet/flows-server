@@ -2,9 +2,9 @@ FROM ocaml/opam
 
 USER opam
 
-COPY . $HOME/flows-server
-
 WORKDIR $HOME/flows-server
+
+COPY liquidsoap-flows-server.opam $HOME/flows-server/liquidsoap-flows-server.opam
 
 RUN opam pin -n .
 
@@ -17,5 +17,7 @@ RUN \
     apt-get -y autoclean && apt-get -y clean
 
 USER opam
+
+COPY . $HOME/flows-server
 
 RUN opam install -y liquidsoap-flows-server
