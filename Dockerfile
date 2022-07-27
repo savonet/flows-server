@@ -2,9 +2,9 @@ FROM ocaml/opam
 
 USER opam
 
-COPY . /tmp/flows-server
+COPY . $HOME/flows-server
 
-WORKDIR /tmp/flows-server
+WORKDIR $HOME/flows-server
 
 RUN opam pin -n .
 
