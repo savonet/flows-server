@@ -13,7 +13,7 @@ RUN opam list --short --recursive --external --required-by=liquidsoap-flows-serv
 USER root
 
 RUN \
-    cat /tmp/deps | xargs apt-get install -y --no-install-recommends && \
+    cat /tmp/deps | xargs apt-get install -y --no-install-recommends geoip-bin && \
     apt-get -y autoclean && apt-get -y clean
 
 USER opam

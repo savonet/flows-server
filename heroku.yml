@@ -2,4 +2,4 @@ build:
   docker:
     web: Dockerfile
 run:
-  web: eval $(opam env) && flows
+  web: opam exec flows
