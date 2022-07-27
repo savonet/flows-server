@@ -8,8 +8,8 @@ authors: ["Samuel Mimram <smimram@gmail.com>"]
 depends: [
   "dune" {>= "3.2"}
   "cohttp-lwt-unix"
-  "ppx_yojson_conv"
   "ppx_stable"
+  "ppx_yojson_conv"
   "sha"
   "yojson"
   "odoc" {with-doc}
