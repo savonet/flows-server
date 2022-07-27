@@ -29,11 +29,13 @@ jobs:
         with:
           context: .
           push: false
+          tags: flows-server
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Release docker container to Heroku.
         run: |
           echo $HEROKU_API_KEY | docker login --username=$HEROKU_EMAIL registry.heroku.com --password-stdin
+          docker tag flows-server registry.heroku.com/${HEROKU_APP_NAME}/web
           docker push registry.heroku.com/${HEROKU_APP_NAME}/web
           heroku container:release web --app $HEROKU_APP_NAME
         env:
