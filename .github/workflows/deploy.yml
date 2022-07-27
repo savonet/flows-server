@@ -31,9 +31,12 @@ jobs:
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: Release a Docker container to Heroku.
-        uses: gonuit/heroku-docker-deploy@v1.3.3
-        with:
-          email: ${{ secrets.HEROKU_EMAIL }}
-          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: ${{ secrets.HEROKU_APP_NAME }}
+      - name: Release docker container to Heroku.
+        run: |
+          echo $HEROKU_API_KEY | docker login --username=$HEROKU_EMAIL registry.heroku.com --password-stdin
+          docker push registry.heroku.com/${HEROKU_APP_NAME}/web
+          heroku container:release web --app $HEROKU_APP_NAME
+        env:
+          HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
