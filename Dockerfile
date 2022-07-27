@@ -18,6 +18,8 @@ RUN \
 
 USER opam
 
+RUN opam list --short --required-by=liquidsoap-flows-server | xargs opam install -y
+
 COPY . $HOME/flows-server
 
 RUN opam install -y liquidsoap-flows-server
