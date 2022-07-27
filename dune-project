@@ -10,6 +10,7 @@
  (synopsis "Server for registering Liquidsoap radios")
  (description "This server allows registering Liquidsoap radios using the flows protocol.")
  (depends
+   dune
    cohttp-lwt-unix
    ppx_yojson_conv
    ppx_stable

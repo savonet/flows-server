@@ -3,7 +3,7 @@ open Cohttp
 open Cohttp_lwt_unix
 open Extlib
 
-let port = 8080
+let port = Option.value ~default:8080 (Option.map int_of_string (Sys.getenv_opt "PORT"))
 
 exception Invalid_password of string
 exception Invalid_radio of string

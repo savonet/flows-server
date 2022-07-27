@@ -6,12 +6,7 @@ description:
 maintainer: ["The Savonet Team <savonet-users@lists.sourceforge.net>"]
 authors: ["Samuel Mimram <smimram@gmail.com>"]
 depends: [
-  "dune" {>= "2.0"}
-  "cohttp-lwt-unix"
-  "ppx_yojson_conv"
-  "ppx_stable"
-  "sha"
-  "yojson"
+  "dune" "cohttp-lwt-unix" "ppx_yojson_conv" "ppx_stable" "sha" "yojson"
 ]
 build: [
   ["dune" "subst"] {pinned}
