@@ -1,7 +1,7 @@
 all: run
 
 run:
-	@dune exec ./flows.exe
+	@dune build -w @run
 
 build:
 	@dune build

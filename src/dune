@@ -4,3 +4,7 @@
  (preprocess
   (pps ppx_stable ppx_yojson_conv))
  (libraries lwt cohttp-lwt-unix sha yojson))
+
+(rule
+  (alias run)
+  (action (run ./flows.exe)))

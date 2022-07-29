@@ -10,6 +10,14 @@ exception Invalid_radio of string
 exception Missing_parameter of string
 exception Invalid_parameter of string
 
+let cors_headers = Header.of_list [
+  "Access-Control-Allow-Origin", "*";
+  "Access-Control-Allow-Methods", "GET, PUT, POST, OPTIONS";
+  "Access-Control-Allow-Headers", "Content-Type"
+]
+
+let respond_string = Server.respond_string ~headers:cors_headers
+
 let server =
   let callback conn req body =
     let ip =
@@ -36,7 +44,7 @@ let server =
     Printf.printf "  query: %s\n%!"
       (query |> List.map (fun (k, v) -> k ^ "=" ^ v) |> String.concat "&");
 
-    let ok () = Server.respond_string ~status:`OK ~body:"Done." () in
+    let ok () = respond_string ~status:`OK ~body:"Done." () in
     try
       match path with
       | "/" ->
@@ -79,7 +87,7 @@ let server =
                   | "ping radio" ->
                     let radio = get_radio () in
                     Radio.ping radio;
-                    Server.respond_string ~status:`OK ~body:"pong radio" ()
+                    respond_string ~status:`OK ~body:"pong radio" ()
                   | "add radio" ->
                     let name = get_param_string "radio" in
                     let website = get_param_string "website" in
@@ -115,7 +123,7 @@ let server =
                     Radio.set_metadata radio ~artist ~title;
                     ok ()
                   | _ ->
-                    Server.respond_string ~status:(`Code 400)
+                    respond_string ~status:(`Code 400)
                       ~body:(Printf.sprintf "Invalid command: %s." command)
                       ()
                 )
@@ -208,38 +216,38 @@ var layer = new ol.layer.Vector({
  map.addLayer(layer);
 </script>
 |};
-            Server.respond_string ~status:`OK ~body:(HTML.to_string h) ()
+            respond_string ~status:`OK ~body:(HTML.to_string h) ()
           | _ -> failwith "Invalid method."
         )
       | "/flows.css" -> Server.respond_file ~fname:"flows.css" ()
       | "/radios" ->
         let body = Radio.all_to_json () in
-        Server.respond_string ~status:`OK ~body ()
+        respond_string ~status:`OK ~body ()
       | _ ->
-        Server.respond_string ~status:(`Code 404)  ~body:(Printf.sprintf "Don't know how to serve %s." path) ()
+        respond_string ~status:(`Code 404)  ~body:(Printf.sprintf "Don't know how to serve %s." path) ()
     with
     | Invalid_password u ->
-      Server.respond_string ~status:(`Code 401)
+      respond_string ~status:(`Code 401)
         ~body:(Printf.sprintf "Invalid password for user: %s." u)
         ()
     | Missing_parameter p ->
-      Server.respond_string ~status:(`Code 400)
+      respond_string ~status:(`Code 400)
         ~body:(Printf.sprintf "Missing parameter: %s." p)
         ()
     | Invalid_parameter p ->
-      Server.respond_string ~status:(`Code 400)
+      respond_string ~status:(`Code 400)
         ~body:(Printf.sprintf "Invalid parameter: %s." p)
         ()
     | Invalid_radio r ->
-      Server.respond_string ~status:(`Code 400)
+      respond_string ~status:(`Code 400)
         ~body:(Printf.sprintf "Unknown radio: %s." r)
         ()
     | Failure s ->
-      Server.respond_string ~status:(`Code 500)
+      respond_string ~status:(`Code 500)
         ~body:(Printf.sprintf "Failure: %s." s)
         ()
     | e ->
-      Server.respond_string ~status:(`Code 500)
+      respond_string ~status:(`Code 500)
         ~body:
           (Printf.sprintf "Unexpected error: %s."
              (Printexc.to_string e))
