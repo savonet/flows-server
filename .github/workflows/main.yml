@@ -17,3 +17,5 @@ jobs:
       run: opam depext -yt liquidsoap-flows-server
     - name: Build and install
       run: opam install -t .
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}

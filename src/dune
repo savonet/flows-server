@@ -4,8 +4,8 @@
  (name flows)
  (public_name flows)
  (preprocess
-  (pps ppx_stable ppx_yojson_conv))
- (libraries lwt cohttp-lwt-unix sha yojson))
+  (pps ppx_stable ppx_yojson_conv pgocaml_ppx))
+ (libraries pgocaml uri lwt cohttp-lwt-unix sha yojson))
 
 (rule
  (alias run)

@@ -10,6 +10,9 @@
  (synopsis "Server for registering Liquidsoap radios")
  (description "This server allows registering Liquidsoap radios using the flows protocol.")
  (depends
+   pgocaml
+   pgocaml_ppx
+   uri
    cohttp-lwt-unix
    ppx_stable
    ppx_yojson_conv
