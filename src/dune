@@ -6,5 +6,6 @@
  (libraries lwt cohttp-lwt-unix sha yojson))
 
 (rule
-  (alias run)
-  (action (run ./flows.exe)))
+ (alias run)
+ (action
+  (run ./flows.exe)))

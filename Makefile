@@ -5,4 +5,4 @@ run:
 	$(MAKE) -C src $@
 
 format:
-	ocamlformat -i **/*.ml
+	@dune build @fmt --auto-promote
