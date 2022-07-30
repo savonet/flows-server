@@ -7,6 +7,19 @@ jobs:
       matrix:
         operating-system: [ubuntu-latest]
         ocaml-version: ['4.14.0']
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     steps:
     - uses: actions/checkout@v2
     - uses: ocaml/setup-ocaml@v2
@@ -18,7 +31,7 @@ jobs:
     - name: Build and install
       run: opam install -t .
       env:
-        PGUSER: ${{ secrets.PGUSER }}
-        PGPASSWORD:  ${{ secrets.PGPASSWORD }}
-        PGHOST:  ${{ secrets.PGHOST }}
-        PGDATABASE: ${{ secrets.PGDATABASE }}
+        PGUSER: postgres
+        PGPASSWORD: postgres
+        PGHOST: localhost
+        PGDATABASE: postgres
