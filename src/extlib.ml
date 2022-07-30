@@ -3,7 +3,6 @@ module List = struct
 
   let shuffle l =
     l
-    |> List.map (fun x -> Random.bits (), x)
-    |> List.sort Stdlib.compare
-    |> List.map snd
+    |> List.map (fun x -> (Random.bits (), x))
+    |> List.sort Stdlib.compare |> List.map snd
 end

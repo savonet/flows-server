@@ -4,7 +4,8 @@ let () =
   if Sys.command "geoiplookup -v localhost > /dev/null" <> 0 then
     Printf.printf "WARNING: geoiplookup not installed, location will not work";
   if not (Sys.file_exists dat) then
-    Printf.printf "WARNING: %s file not present for geoiplookup, location will not work" dat
+    Printf.printf
+      "WARNING: %s file not present for geoiplookup, location will not work" dat
 
 let lookup_string ip =
   let cmd = Filename.quote_command "geoiplookup" ["-f"; dat; ip] in

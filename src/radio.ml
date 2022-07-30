@@ -27,7 +27,7 @@ type t = {
   website : string;
   description : string;
   genre : string;
-  logo : string; (** url of the logo *)
+  logo : string;  (** url of the logo *)
   longitude : float;
   latitude : float;
   artist : string;
@@ -41,13 +41,13 @@ type t = {
 let to_json = yojson_of_t
 let of_json = t_of_yojson
 let db = DB.create ~every:60. ~to_json ~of_json "radios"
+
 let id ~radio ~user =
-  match user with
-  | Some user -> radio ^ "@" ^ user
-  | None -> radio
+  match user with Some user -> radio ^ "@" ^ user | None -> radio
 
 (** Register a radio. *)
-let register ~name ~user ~website ~description ~genre ~logo ~longitude ~latitude ~streams () =
+let register ~name ~user ~website ~description ~genre ~logo ~longitude ~latitude
+    ~streams () =
   let last = Unix.time () in
   let r =
     {
