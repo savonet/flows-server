@@ -18,4 +18,7 @@ jobs:
     - name: Build and install
       run: opam install -t .
       env:
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        PGUSER: ${{ secrets.PGUSER }}
+        PGPASSWORD:  ${{ secrets.PGPASSWORD }}
+        PGHOST:  ${{ secrets.PGHOST }}
+        PGDATABASE: ${{ secrets.PGDATABASE }}
