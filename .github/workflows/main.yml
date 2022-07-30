@@ -11,7 +11,6 @@ jobs:
       postgres:
         image: postgres
         env:
-          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         options: >-
           --health-cmd pg_isready
@@ -35,5 +34,3 @@ jobs:
       env:
         PGUSER: postgres
         PGPASSWORD: postgres
-        PGHOST: localhost
-        PGDATABASE: postgres
