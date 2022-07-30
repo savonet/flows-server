@@ -2,14 +2,10 @@ open Lwt.Syntax
 open Cohttp
 open Cohttp_lwt_unix
 open Extlib
+open Commands
 
 let port =
   Option.value ~default:8080 (Option.map int_of_string (Sys.getenv_opt "PORT"))
-
-exception Invalid_password of string
-exception Invalid_radio of string
-exception Missing_parameter of string
-exception Invalid_parameter of string
 
 let cors_headers =
   Header.of_list
@@ -19,7 +15,8 @@ let cors_headers =
       ("Access-Control-Allow-Headers", "Content-Type");
     ]
 
-let respond_string = Server.respond_string ~headers:cors_headers
+let respond_string ~status ~body () =
+  Server.respond_string ~headers:cors_headers ~status ~body ()
 
 let server =
   let callback conn req body =
@@ -47,98 +44,16 @@ let server =
     Printf.printf "  query: %s\n%!"
       (query |> List.map (fun (k, v) -> k ^ "=" ^ v) |> String.concat "&");
 
-    let ok () = respond_string ~status:`OK ~body:"Done." () in
     try
       match path with
         | "/" -> (
             match meth with
               | `POST -> (
                   match JSON.of_string body with
-                    | `Assoc params -> (
-                        let get_param_opt k = List.assoc_opt k params in
-                        let get_param_string k =
-                          match get_param_opt k with
-                            | Some p -> JSON.string p
-                            | None -> raise (Missing_parameter k)
-                        in
-                        let user =
-                          match get_param_opt "user" with
-                            | Some (`String u) -> Some u
-                            | Some `Null -> None
-                            | Some _ -> raise (Invalid_parameter "user")
-                            | None -> None
-                        in
-                        if user <> None then (
-                          let user = Option.get user in
-                          let pass = get_param_string "password" in
-                          let mail = get_param_string "mail" in
-                          if not (User.valid_or_register ~user ~pass ~mail) then
-                            raise (Invalid_password user));
-                        let get_radio () =
-                          let radio = get_param_string "radio" in
-                          match Radio.find_opt ~user ~radio with
-                            | Some r -> r
-                            | None -> raise (Invalid_radio radio)
-                        in
-                        let command = get_param_string "command" in
-                        match command with
-                          | "ping radio" ->
-                              let radio = get_radio () in
-                              Radio.ping radio;
-                              respond_string ~status:`OK ~body:"pong radio" ()
-                          | "add radio" ->
-                              let name = get_param_string "radio" in
-                              let website = get_param_string "website" in
-                              let description =
-                                get_param_string "description"
-                              in
-                              let genre = get_param_string "genre" in
-                              let logo = get_param_string "logo" in
-                              let geoip = GeoIP.lookup_opt ip in
-                              let latitude, longitude =
-                                match geoip with
-                                  | Some geoip ->
-                                      (geoip.latitude, geoip.longitude)
-                                  | None -> (0., 0.)
-                              in
-                              let streams =
-                                match get_param_opt "streams" with
-                                  | None -> raise (Missing_parameter "streams")
-                                  | Some (`List l) ->
-                                      List.map
-                                        (function
-                                          | `Assoc s ->
-                                              let format =
-                                                List.assoc "format" s
-                                                |> JSON.string
-                                              in
-                                              let url =
-                                                List.assoc "url" s
-                                                |> JSON.string
-                                              in
-                                              { Radio.format; url }
-                                          | _ ->
-                                              raise
-                                                (Invalid_parameter "streams"))
-                                        l
-                                  | Some _ ->
-                                      raise (Invalid_parameter "streams")
-                              in
-                              Radio.register ~name ~website ~user ~description
-                                ~genre ~logo ~longitude ~latitude ~streams ();
-                              ok ()
-                          | "metadata" ->
-                              let radio = get_radio () in
-                              let artist = get_param_string "artist" in
-                              let title = get_param_string "title" in
-                              Radio.set_metadata radio ~artist ~title;
-                              ok ()
-                          | _ ->
-                              respond_string ~status:(`Code 400)
-                                ~body:
-                                  (Printf.sprintf "Invalid command: %s." command)
-                                ())
-                    | _ -> failwith "Invalid JSON."))
+                    | `Assoc params ->
+                        Commands.exec ~respond_string ~params ~ip ()
+                    | _ -> failwith "Invalid JSON.")
+              | _ -> failwith "Not implemented")
         | "/radios" ->
             let body = Radio.all_to_json () in
             respond_string ~status:`OK ~body ()

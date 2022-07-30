@@ -5,7 +5,7 @@ module Wrapped = struct
   type t = {
     user : string;  (** user *)
     pass : string;  (** encrypted password *)
-    mail : string;
+    email : string;
     last : float;  (** last login *)
   }
   [@@deriving yojson]
@@ -15,7 +15,7 @@ end
 type t = {
   user : string;  (** user *)
   pass : Sha256.t;  (** encrypted password *)
-  mail : string;
+  email : string;
   last : float;  (** last login *)
 }
 [@@deriving stable_record ~version:Wrapped.t ~modify:[pass]]
@@ -33,7 +33,7 @@ let find_opt user = DB.find_opt db user
 
 (** Test whether the user/pass combination is valid. Register it if the user
     does not already exist. *)
-let valid_or_register ~user ~pass ~mail =
+let valid_or_register ~user ~pass ~email =
   let pass = Sha256.string pass in
   match DB.find_opt db user with
     | Some u ->
@@ -42,6 +42,6 @@ let valid_or_register ~user ~pass ~mail =
           true)
         else false
     | None ->
-        let u = { user; pass; mail; last = Unix.time () } in
+        let u = { user; pass; email; last = Unix.time () } in
         DB.add db user u;
         true
