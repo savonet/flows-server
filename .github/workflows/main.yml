@@ -26,10 +26,12 @@ jobs:
       with:
         ocaml-version: ${{ matrix.ocaml-version }}
     - run: opam pin add -n .
-    - name: Install dependencies
+    - name: Install external dependencies
       run: opam depext -yt liquidsoap-flows-server
+    - name: Install dependencies
+      run: opam list --short --required-by=liquidsoap-flows-server | xargs opam install -y
     - name: Build and install
-      run: opam install -t .
+      run: opam install -t liquidsoap-flows-server
       env:
         PGUSER: postgres
         PGPASSWORD: postgres
