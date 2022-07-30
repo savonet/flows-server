@@ -11,6 +11,7 @@ let db =
           in
           (Uri.host uri, Uri.port uri, Uri.user uri, Uri.password uri, path)
   in
+
   let dbh = PGOCaml.connect ?host ?port ?user ?password ?database () in
 
   let () =
@@ -45,15 +46,15 @@ let db =
   in
 
   let () =
-  [%pgsql
-    dbh "execute"
-      "CREATE TABLE IF NOT EXISTS stream (\n\
-      \      id SERIAL PRIMARY KEY,\n\
-      \      format TEXT NOT NULL,\n\
-      \      url TEXT NOT NULL,\n\
-      \      radio_id INTEGER NOT NULL REFERENCES radio (id),\n\
-      \      created_at TIMESTAMP WITH TIME ZONE NOT NULL,\n\
-      \      updated_at TIMESTAMP WITH TIME ZONE NOT NULL)"]
+    [%pgsql
+      dbh "execute"
+        "CREATE TABLE IF NOT EXISTS stream (\n\
+        \      id SERIAL PRIMARY KEY,\n\
+        \      format TEXT NOT NULL,\n\
+        \      url TEXT NOT NULL,\n\
+        \      radio_id INTEGER NOT NULL REFERENCES radio (id),\n\
+        \      created_at TIMESTAMP WITH TIME ZONE NOT NULL,\n\
+        \      updated_at TIMESTAMP WITH TIME ZONE NOT NULL)"]
   in
 
   dbh

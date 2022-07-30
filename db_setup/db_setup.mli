@@ -1,1 +1,1 @@
-val db : unit 
+val db : (string, bool) Hashtbl.t PGOCaml.t
