@@ -11,7 +11,7 @@
  (preprocessor_deps db_config.sexp)
  (preprocess
   (pps ppx_stable ppx_yojson_conv pgocaml_ppx))
- (libraries db_setup pgocaml uri lwt cohttp-lwt-unix sha yojson))
+ (libraries db pgocaml uri lwt cohttp-lwt-unix sha yojson))
 
 (rule
  (alias run)

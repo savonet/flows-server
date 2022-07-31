@@ -4,8 +4,8 @@
    (PGHOST localhost))))
 
 (library
- (name db_setup)
- (modules db_setup)
+ (name db)
+ (modules db)
  (preprocess
   (pps ppx_stable ppx_yojson_conv pgocaml_ppx))
  (libraries pgocaml uri))

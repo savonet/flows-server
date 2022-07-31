@@ -18,6 +18,9 @@ let cors_headers =
 let respond_string ~status ~body () =
   Server.respond_string ~headers:cors_headers ~status ~body ()
 
+type 'a page = { pp : int; page : int; total : int; data : 'a list }
+[@@deriving yojson]
+
 let server =
   let callback conn req body =
     let ip =
@@ -55,8 +58,18 @@ let server =
                     | _ -> failwith "Invalid JSON.")
               | _ -> failwith "Not implemented")
         | "/radios" ->
-            let body = Radio.all_to_json () in
-            respond_string ~status:`OK ~body ()
+            let pp = try int_of_string (List.assoc "pp" query) with _ -> 10 in
+            let page =
+              try int_of_string (List.assoc "page" query) with _ -> 1
+            in
+            let total, data =
+              Db.transaction (fun db ->
+                  (Radio.count ~db () / pp, Radio.get_page ~db ~pp ~page ()))
+            in
+            let body = yojson_of_page Radio.to_json { pp; page; total; data } in
+            respond_string ~status:`OK
+              ~body:(JSON.to_string ~pretty:true body)
+              ()
         | _ ->
             respond_string ~status:(`Code 404)
               ~body:(Printf.sprintf "Don't know how to serve %s." path)

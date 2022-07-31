@@ -8,6 +8,15 @@
       (deserialize "int_of_string")
     )
   )
+  ( (Or
+      ( (Rule (colnam password))
+        (Rule (typnam varchar))
+      )
+    )
+    ( (serialize "Sha256.to_hex")
+      (deserialize "Sha256.of_hex")
+    )
+  )
   ( (And
       ( (Or
           ( (Rule (colnam created_at))
@@ -16,6 +25,11 @@
         )
         (Or
           ( (Rule (colnam updated_at))
+            (Rule (typnam timestamptz))
+          )
+        )
+        (Or
+          ( (Rule (colnam last_sign_in_at))
             (Rule (typnam timestamptz))
           )
         )

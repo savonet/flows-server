@@ -1,7 +1,5 @@
 (** Operations on radios. *)
 
-open Db_setup
-
 (** A stream. *)
 type stream = { format : string; url : string } [@@deriving yojson]
 
@@ -13,6 +11,7 @@ module Public = struct
     website : string option;
     description : string option;
     genre : string option;
+    logo : string option;
     longitude : float option;
     latitude : float option;
     artist : string option;
@@ -26,7 +25,7 @@ end
 type t = {
   id : int;
   name : string;
-  user : string;
+  user : User.t;
   website : string option;
   description : string option;
   genre : string option;
@@ -40,41 +39,19 @@ type t = {
   updated_at : float;
 }
 [@@deriving
-  yojson,
-    stable_record ~version:Public.t ~remove:[user; logo; created_at; updated_at]]
+  stable_record ~version:Public.t ~remove:[user; created_at; updated_at]]
 
-let from_sql id =
-  let id = Int32.of_int id in
-  let radio =
-    List.hd
-      [%pgsql.object
-        db "load_custom_from=src/db_config.sexp" "show=pp"
-          "SELECT
-                 \"radio\".\"id\" AS id,
-                 \"radio\".\"name\" AS name,
-                 \"flows_user\".\"name\" AS user,
-                 website,
-                 description,
-                 genre,
-                 logo,
-                 longitude,
-                 latitude,
-                 artist,
-                 title,
-                 \"radio\".\"updated_at\" AS updated_at,
-                 \"radio\".\"created_at\" AS created_at
-               FROM radio
-               LEFT JOIN flows_user ON \"flows_user\".\"id\" = \"radio\".\"user_id\"
-               WHERE \"radio\".\"id\" = $id"]
-  in
+let populate ~db radio =
+  let id = Int32.of_int radio#id in
   let streams =
     List.map
       (fun (format, url) -> { format; url })
       [%pgsql db "SELECT format, url FROM stream WHERE radio_id = $id"]
   in
+  let user = User.fetch ~db (Int32.to_int radio#user_id) in
   {
     id = radio#id;
-    user = radio#user;
+    user;
     website = radio#website;
     name = radio#name;
     logo = radio#logo;
@@ -89,63 +66,131 @@ let from_sql id =
     created_at = radio#created_at;
   }
 
-let to_json = yojson_of_t
-let of_json = t_of_yojson
-let db = DB.create ~every:60. ~to_json ~of_json "radios"
-let id ~radio ~user = radio ^ "@" ^ user
+let fetch ~db id =
+  let id = Int32.of_int id in
+  populate ~db
+    (List.hd
+       [%pgsql.object
+         db "load_custom_from=src/db_config.sexp" "show=pp"
+           "SELECT * FROM radio WHERE id = $id"])
 
-(** Register a radio. *)
-let register ~name ~user ~website ~description ~genre ~logo ~longitude ~latitude
-    ~streams () =
-  let updated_at = Unix.time () in
-  let r =
-    {
-      id = 123;
-      name;
-      user;
-      website;
-      description;
-      genre;
-      logo;
-      longitude;
-      latitude;
-      artist = None;
-      title = None;
-      streams;
-      created_at = updated_at;
-      updated_at;
-    }
+let find ~db ~user name =
+  let user_id = Int32.of_int user.User.id in
+  let radio =
+    [%pgsql.object
+      db "load_custom_from=src/db_config.sexp" "show=pp"
+        "SELECT * FROM radio WHERE name = $name AND user_id = $user_id"]
   in
-  DB.add db (id ~radio:name ~user) r
+  match radio with [] -> None | radio :: _ -> Some (populate ~db radio)
 
-(** Find radio with given user and radio name. *)
-let find_opt ~user ~radio = DB.find_opt db (id ~user ~radio)
+let sync_streams ~db ~streams id =
+  let updated_at = Unix.time () in
+  let () = [%pgsql db "DELETE FROM stream WHERE radio_id = $id"] in
+  List.iter
+    (fun { format; url } ->
+      [%pgsql
+        db "load_custom_from=src/db_config.sexp" "show=pp"
+          "INSERT INTO
+       stream (radio_id, format, url, updated_at, created_at)
+     VALUES ($id, $format, $url, $updated_at, $updated_at)"])
+    streams
 
-(** Update values for radio. *)
-let set r =
-  let radio_id r = id ~radio:r.name ~user:r.user in
-  DB.add db (radio_id r) r
+let update ~db radio =
+  let {
+    id;
+    user;
+    name;
+    website;
+    description;
+    genre;
+    logo;
+    longitude;
+    latitude;
+    artist;
+    title;
+    streams;
+    created_at;
+    _;
+  } =
+    radio
+  in
+  let id = Int32.of_int id in
+  let user_id = Int32.of_int user.id in
+  let updated_at = Unix.time () in
+  let () =
+    [%pgsql
+      db "load_custom_from=src/db_config.sexp" "show=pp"
+        "UPDATE
+       radio
+     SET
+       name = $name,
+       user_id = $user_id,
+       website = $?website,
+       description = $?description,
+       genre = $?genre,
+       logo = $?logo,
+       longitude = $?longitude,
+       latitude = $?latitude,
+       artist = $?artist,
+       title = $?title,
+       created_at = $created_at,
+       updated_at = $updated_at
+     WHERE id = $id"]
+  in
+  sync_streams ~db ~streams id;
+  { radio with updated_at }
 
-let ping r =
-  let r = { r with updated_at = Unix.time () } in
-  set r
+let create ?website ?description ?genre ?logo ?longitude ?latitude ?artist
+    ?title ~db ~streams ~name ~user () =
+  let created_at = Unix.time () in
+  let user_id = Int32.of_int user.User.id in
+  let id =
+    List.hd
+      [%pgsql
+        db "load_custom_from=src/db_config.sexp" "show=pp"
+          "INSERT INTO
+  radio (name, user_id, website, description, genre, logo, longitude, latitude, artist, title, created_at, updated_at)
+ VALUES ($name, $user_id, $?website, $?description, $?genre, $?logo, $?longitude, $?latitude, $?artist, $?title, $created_at, $created_at)
+ RETURNING id"]
+  in
+  sync_streams ~db ~streams (Int32.of_int id);
+  {
+    id;
+    user;
+    name;
+    website;
+    description;
+    genre;
+    logo;
+    longitude;
+    latitude;
+    artist;
+    title;
+    streams;
+    updated_at = created_at;
+    created_at;
+  }
+
+let to_json r = [%yojson_of: Public.t] (to_Public_t r)
+let ping ~db r = ignore (update ~db { r with updated_at = Unix.time () })
 
 (** Set metadata of the currently playing title. *)
-let set_metadata r ~artist ~title = set { r with artist; title }
+let set_metadata ~db r ~artist ~title =
+  ignore (update ~db { r with artist; title })
 
-let to_seq () =
-  let now = Unix.time () in
-  DB.to_seq db
-  (* Forget radios not updated for more than 1h. *)
-  |> Seq.filter (fun (_, r) -> now -. r.updated_at <= 3600.)
+let count ~db () =
+  Int64.to_int
+    (Option.get
+       (List.hd
+          [%pgsql
+            db "load_custom_from=src/db_config.sexp" "show=pp"
+              "SELECT COUNT(id) FROM radio"]))
 
-let to_list () = to_seq () |> List.of_seq
-
-(** Export all radios to JSON. *)
-let all_to_json () =
-  to_seq ()
-  |> Seq.map (fun (_, r) -> [%yojson_of: Public.t] (to_Public_t r))
-  |> List.of_seq
-  |> fun l -> `List l |> JSON.to_string ~pretty:true
-
-let iter = DB.iter db
+(* Get one page of result. *)
+let get_page ~db ~page ~pp () =
+  let offset = Int64.of_int ((page - 1) * pp) in
+  let limit = Int64.of_int pp in
+  List.map (populate ~db)
+    [%pgsql.object
+      db "load_custom_from=src/db_config.sexp" "show=pp"
+        "SELECT * FROM radio OFFSET $offset LIMIT $limit"]
