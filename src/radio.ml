@@ -49,24 +49,23 @@ let from_sql id =
     List.hd
       [%pgsql.object
         db "load_custom_from=src/db_config.sexp" "show=pp"
-          "SELECT\n\
-          \       \"radio\".\"id\" AS id,\n\
-          \       \"radio\".\"name\" AS name,\n\
-          \       \"flows_user\".\"name\" AS user,\n\
-          \       website,\n\
-          \       description,\n\
-          \       genre,\n\
-          \       logo,\n\
-          \       longitude,\n\
-          \       latitude,\n\
-          \       artist,\n\
-          \       title,\n\
-          \       \"radio\".\"updated_at\" AS updated_at,\n\
-          \       \"radio\".\"created_at\" AS created_at\n\
-          \     FROM radio\n\
-          \     LEFT JOIN flows_user ON \"flows_user\".\"id\" = \
-           \"radio\".\"user_id\"\n\
-          \     WHERE \"radio\".\"id\" = $id"]
+          "SELECT
+                 \"radio\".\"id\" AS id,
+                 \"radio\".\"name\" AS name,
+                 \"flows_user\".\"name\" AS user,
+                 website,
+                 description,
+                 genre,
+                 logo,
+                 longitude,
+                 latitude,
+                 artist,
+                 title,
+                 \"radio\".\"updated_at\" AS updated_at,
+                 \"radio\".\"created_at\" AS created_at
+               FROM radio
+               LEFT JOIN flows_user ON \"flows_user\".\"id\" = \"radio\".\"user_id\"
+               WHERE \"radio\".\"id\" = $id"]
   in
   let streams =
     List.map

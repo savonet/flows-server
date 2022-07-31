@@ -17,45 +17,45 @@ let db =
   let () =
     [%pgsql
       dbh "execute"
-        "CREATE TABLE IF NOT EXISTS flows_user (\n\
-        \      id SERIAL PRIMARY KEY,\n\
-        \      name TEXT NOT NULL,\n\
-        \      email TEXT,\n\
-        \      password VARCHAR NOT NULL,\n\
-        \      last_sign_in_at TIMESTAMP WITH TIME ZONE NOT NULL,\n\
-        \      created_at TIMESTAMP WITH TIME ZONE NOT NULL,\n\
-        \      updated_at TIMESTAMP WITH TIME ZONE NOT NULL)"]
+        "CREATE TABLE IF NOT EXISTS flows_user (
+              id SERIAL PRIMARY KEY,
+              name TEXT NOT NULL,
+              email TEXT,
+              password VARCHAR NOT NULL,
+              last_sign_in_at TIMESTAMP WITH TIME ZONE NOT NULL,
+              created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+              updated_at TIMESTAMP WITH TIME ZONE NOT NULL)"]
   in
 
   let () =
     [%pgsql
       dbh "execute"
-        "CREATE TABLE IF NOT EXISTS radio (\n\
-        \      id SERIAL PRIMARY KEY,\n\
-        \      user_id INTEGER NOT NULL REFERENCES flows_user (id),\n\
-        \      name TEXT NOT NULL,\n\
-        \      description TEXT,\n\
-        \      website TEXT,\n\
-        \      genre TEXT,\n\
-        \      logo TEXT,\n\
-        \      longitude DOUBLE PRECISION,\n\
-        \      latitude DOUBLE PRECISION,\n\
-        \      artist TEXT,\n\
-        \      title TEXT,\n\
-        \      created_at TIMESTAMP WITH TIME ZONE NOT NULL,\n\
-        \      updated_at TIMESTAMP WITH TIME ZONE NOT NULL)"]
+        "CREATE TABLE IF NOT EXISTS radio (
+              id SERIAL PRIMARY KEY,
+              user_id INTEGER NOT NULL REFERENCES flows_user (id),
+              name TEXT NOT NULL,
+              description TEXT,
+              website TEXT,
+              genre TEXT,
+              logo TEXT,
+              longitude DOUBLE PRECISION,
+              latitude DOUBLE PRECISION,
+              artist TEXT,
+              title TEXT,
+              created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+              updated_at TIMESTAMP WITH TIME ZONE NOT NULL)"]
   in
 
   let () =
     [%pgsql
       dbh "execute"
-        "CREATE TABLE IF NOT EXISTS stream (\n\
-        \      id SERIAL PRIMARY KEY,\n\
-        \      format TEXT NOT NULL,\n\
-        \      url TEXT NOT NULL,\n\
-        \      radio_id INTEGER NOT NULL REFERENCES radio (id),\n\
-        \      created_at TIMESTAMP WITH TIME ZONE NOT NULL,\n\
-        \      updated_at TIMESTAMP WITH TIME ZONE NOT NULL)"]
+        "CREATE TABLE IF NOT EXISTS stream (
+              id SERIAL PRIMARY KEY,
+              format TEXT NOT NULL,
+              url TEXT NOT NULL,
+              radio_id INTEGER NOT NULL REFERENCES radio (id),
+              created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+              updated_at TIMESTAMP WITH TIME ZONE NOT NULL)"]
   in
 
   dbh
