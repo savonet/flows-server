@@ -10,17 +10,13 @@ let exec ~respond_string ~params ~ip () =
   in
   let user =
     match get_param_opt "user" with
-      | Some (`String u) -> Some u
-      | Some `Null -> None
-      | Some _ -> raise (Invalid_parameter "user")
-      | None -> None
+      | Some (`String u) -> u
+      | _ -> raise (Invalid_parameter "user")
   in
-  if user <> None then (
-    let user = Option.get user in
-    let pass = get_param_string "password" in
-    let email = get_param_string "email" in
-    if not (User.valid_or_register ~user ~pass ~email) then
-      raise (Invalid_password user));
+  let pass = get_param_string "password" in
+  let email = get_param_string "email" in
+  if not (User.valid_or_register ~user ~pass ~email) then
+    raise (Invalid_password user);
   let get_radio () =
     let radio = get_param_string "radio" in
     match Radio.find_opt ~user ~radio with
@@ -38,8 +34,8 @@ let exec ~respond_string ~params ~ip () =
         ok ()
     | "metadata" ->
         let radio = get_radio () in
-        let artist = get_param_string "artist" in
-        let title = get_param_string "title" in
+        let artist = Some (get_param_string "artist") in
+        let title = Some (get_param_string "title") in
         Radio.set_metadata radio ~artist ~title;
         ok ()
     | _ ->

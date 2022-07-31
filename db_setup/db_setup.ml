@@ -34,11 +34,12 @@ let db =
         \      id SERIAL PRIMARY KEY,\n\
         \      user_id INTEGER NOT NULL REFERENCES flows_user (id),\n\
         \      name TEXT NOT NULL,\n\
+        \      description TEXT,\n\
         \      website TEXT,\n\
         \      genre TEXT,\n\
         \      logo TEXT,\n\
-        \      longiture NUMERIC,\n\
-        \      latitude NUMERIC,\n\
+        \      longitude DOUBLE PRECISION,\n\
+        \      latitude DOUBLE PRECISION,\n\
         \      artist TEXT,\n\
         \      title TEXT,\n\
         \      created_at TIMESTAMP WITH TIME ZONE NOT NULL,\n\

@@ -1,12 +1,14 @@
 (env
  (dev
-  (env-vars (PGHOST localhost))))
+  (env-vars
+   (PGHOST localhost))))
 
 (include_subdirs unqualified)
 
 (executable
  (name flows)
  (public_name flows)
+ (preprocessor_deps db_config.sexp)
  (preprocess
   (pps ppx_stable ppx_yojson_conv pgocaml_ppx))
  (libraries db_setup pgocaml uri lwt cohttp-lwt-unix sha yojson))

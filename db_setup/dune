@@ -1,6 +1,7 @@
 (env
  (dev
-  (env-vars (PGHOST localhost))))
+  (env-vars
+   (PGHOST localhost))))
 
 (library
  (name db_setup)
