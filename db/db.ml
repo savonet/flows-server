@@ -19,6 +19,20 @@ let db () =
           (Uri.host uri, Uri.port uri, Uri.user uri, Uri.password uri, path)
   in
 
+  Printf.printf
+    {|Detected database config:
+Host:     %s
+Port:     %s
+User:     %s
+Password: %s
+Database: %s
+|}
+    (Option.value ~default:"(default)" host)
+    (Option.value ~default:"(default)" (Option.map string_of_int port))
+    (Option.value ~default:"(default)" user)
+    (Option.value ~default:"" password)
+    (Option.value ~default:"(default)" database);
+
   PGOCaml.connect ?host ?port ?user ?password ?database ()
 
 let transaction fn =
