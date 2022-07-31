@@ -18,15 +18,9 @@ let db () =
 
 let transaction fn =
   let db = db () in
-  ignore [%pgsql db "execute" "BEGIN"];
-  try
-    let ret = fn db in
-    ignore [%pgsql db "execute" "COMMIT"];
-    PGOCaml.close db;
-    ret
+  try PGOCaml.transact db fn
   with exn ->
     let bt = Printexc.get_raw_backtrace () in
-    ignore [%pgsql db "execute" "ROLLBACK"];
     PGOCaml.close db;
     Printexc.raise_with_backtrace exn bt
 
