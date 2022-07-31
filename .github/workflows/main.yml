@@ -25,11 +25,12 @@ jobs:
     - uses: ocaml/setup-ocaml@v2
       with:
         ocaml-version: 4.14.0
+        opam-disable-sandboxing: true
         dune-cache: true
     - name: Install dependencies
       run: opam list --short --color=never --required-by=liquidsoap-flows-server | xargs opam install -y
-    - name: Build
-      run: eval $(opam env) && dune build
+    - name: Install
+      run: opam install liquidsoap-flows-server
       env:
         PGHOST: localhost
         PGUSER: postgres
