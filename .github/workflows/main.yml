@@ -37,8 +37,10 @@ jobs:
       run: opam install liquidsoap-flows-server
       env:
         PGHOST: localhost
+        PGPORT: 5432
         PGUSER: postgres
         PGPASSWORD: postgres
+        PGDATABASE: postgres
 
   deploy:
     runs-on: ubuntu-latest
