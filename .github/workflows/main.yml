@@ -32,5 +32,6 @@ jobs:
     - name: Build and install
       run: opam install -t liquidsoap-flows-server
       env:
+        PGHOST: localhost
         PGUSER: postgres
         PGPASSWORD: postgres
