@@ -26,23 +26,22 @@ let transaction fn =
 
 let setup () =
   transaction (fun db ->
-      let () =
-        [%pgsql
-          db "execute"
-            "CREATE TABLE IF NOT EXISTS flows_user (
+      PGOCaml.prepare db
+        ~query:
+          "CREATE TABLE IF NOT EXISTS flows_user (
               id SERIAL PRIMARY KEY,
               name TEXT NOT NULL UNIQUE,
               email TEXT,
               password VARCHAR NOT NULL,
               last_sign_in_at TIMESTAMP WITH TIME ZONE,
               created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-              updated_at TIMESTAMP WITH TIME ZONE NOT NULL)"]
-      in
+              updated_at TIMESTAMP WITH TIME ZONE NOT NULL)"
+        ();
+      ignore (PGOCaml.execute db ~params:[] ());
 
-      let () =
-        [%pgsql
-          db "execute"
-            "CREATE TABLE IF NOT EXISTS radio (
+      PGOCaml.prepare db
+        ~query:
+          "CREATE TABLE IF NOT EXISTS radio (
               id SERIAL PRIMARY KEY,
               user_id INTEGER NOT NULL REFERENCES flows_user (id),
               name TEXT NOT NULL UNIQUE,
@@ -55,15 +54,18 @@ let setup () =
               artist TEXT,
               title TEXT,
               created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-              updated_at TIMESTAMP WITH TIME ZONE NOT NULL)"]
-      in
+              updated_at TIMESTAMP WITH TIME ZONE NOT NULL)"
+        ();
+      ignore (PGOCaml.execute db ~params:[] ());
 
-      [%pgsql
-        db "execute"
+      PGOCaml.prepare db
+        ~query:
           "CREATE TABLE IF NOT EXISTS stream (
               id SERIAL PRIMARY KEY,
               format TEXT NOT NULL,
               url TEXT NOT NULL,
               radio_id INTEGER NOT NULL REFERENCES radio (id),
               created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-              updated_at TIMESTAMP WITH TIME ZONE NOT NULL)"])
+              updated_at TIMESTAMP WITH TIME ZONE NOT NULL)"
+        ();
+      ignore (PGOCaml.execute db ~params:[] ()))
