@@ -1,5 +1,10 @@
 name: Build
 on: [push]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ${{ matrix.operating-system }}
@@ -29,8 +34,6 @@ jobs:
       run: opam depext -yt liquidsoap-flows-server
     - name: Install dependencies
       run: opam list --short --color=never --required-by=liquidsoap-flows-server | xargs opam install -y
-    - name: Setup upterm session
-      uses: lhotari/action-upterm@v1
     - name: Build and install
       run: opam install -t liquidsoap-flows-server
       env:
