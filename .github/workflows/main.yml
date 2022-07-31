@@ -36,7 +36,6 @@ jobs:
     - name: Install
       run: opam install liquidsoap-flows-server
       env:
-        DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
         PGHOST: localhost
         PGUSER: postgres
         PGPASSWORD: postgres

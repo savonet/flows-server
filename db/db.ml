@@ -3,13 +3,18 @@ type db = (string, bool) Hashtbl.t PGOCaml.t
 let db () =
   let host, port, user, password, database =
     match Sys.getenv_opt "DATABASE_URL" with
-      | None -> (None, None, None, None, None)
+      | None ->
+          ( Sys.getenv_opt "PGHOST",
+            Option.map int_of_string (Sys.getenv_opt "PGPORT"),
+            Sys.getenv_opt "PGUSER",
+            Sys.getenv_opt "PGPASSWORD",
+            Sys.getenv_opt "PGDATABASE" )
       | Some uri ->
           let uri = Uri.of_string uri in
           let path =
             match Uri.path uri with
               | "" -> None
-              | s -> Some (String.sub s 1 (String.length s))
+              | s -> Some (String.sub s 1 (String.length s - 1))
           in
           (Uri.host uri, Uri.port uri, Uri.user uri, Uri.password uri, path)
   in
