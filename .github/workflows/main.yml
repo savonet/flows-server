@@ -36,7 +36,7 @@ jobs:
     - name: Install dependencies
       run: opam list --short --color=never --required-by=liquidsoap-flows-server | xargs opam install -y
     - name: Build
-      run: opam exec dune build
+      run: eval $(opam env) && dune build
       env:
         PGHOST: localhost
         PGUSER: postgres

@@ -22,6 +22,4 @@ RUN opam list --short --required-by=liquidsoap-flows-server | xargs opam install
 
 COPY . $HOME/flows-server
 
-RUN opam install -y liquidsoap-flows-server
-
-CMD ["opam", "exec", "flows"]
+CMD ["opam", "exec", "dune", "exec", "flows"]
