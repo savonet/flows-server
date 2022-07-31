@@ -29,14 +29,15 @@ jobs:
     - uses: ocaml/setup-ocaml@v2
       with:
         ocaml-version: ${{ matrix.ocaml-version }}
+        opam-disable-sandboxing: true
         dune-cache: true
     - run: opam pin add -n .
     - name: Install external dependencies
       run: opam depext -yt liquidsoap-flows-server
     - name: Install dependencies
       run: opam list --short --color=never --required-by=liquidsoap-flows-server | xargs opam install -y
-    - name: Build
-      run: dune build
+    - name: Build and install
+      run: opam install -t liquidsoap-flows-server
       env:
         PGHOST: localhost
         PGUSER: postgres
