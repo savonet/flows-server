@@ -1,0 +1,1 @@
+let () = Db.setup ()

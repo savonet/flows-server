@@ -14,6 +14,16 @@
  (libraries db pgocaml uri lwt cohttp-lwt-unix sha yojson))
 
 (rule
+ (target db_config.sexp)
+ (deps
+  (:db_setup ../db/db_setup.exe)
+  (:db_config ../db/db_config.sexp))
+ (action
+  (progn
+   (run %{db_setup})
+   (copy %{db_config} %{target}))))
+
+(rule
  (alias run)
  (action
   (run ./flows.exe)))
