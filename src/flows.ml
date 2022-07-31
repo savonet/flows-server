@@ -21,6 +21,8 @@ let respond_string ~status ~body () =
 type 'a page = { pp : int; page : int; total : int; data : 'a list }
 [@@deriving yojson]
 
+let () = Db.setup ()
+
 let server =
   let callback conn req body =
     let ip =
