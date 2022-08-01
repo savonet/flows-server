@@ -1,7 +1,7 @@
 type db = Pgx_lwt_unix.t
 
-let db () =
-  let host, port, user, password, database =
+let db ?host ?port ?user ?password ?database () =
+  let d_host, d_port, d_user, d_password, d_database =
     match Sys.getenv_opt "DATABASE_URL" with
       | None ->
           ( Sys.getenv_opt "PGHOST",
@@ -17,6 +17,14 @@ let db () =
               | s -> Some (String.sub s 1 (String.length s - 1))
           in
           (Uri.host uri, Uri.port uri, Uri.user uri, Uri.password uri, path)
+  in
+  let f v d = match (v, d) with Some v, _ -> Some v | None, d -> d in
+  let host, port, user, password, database =
+    ( f host d_host,
+      f port d_port,
+      f user d_user,
+      f password d_password,
+      f database d_database )
   in
 
   Printf.printf
@@ -76,6 +84,4 @@ let table_queries =
 
 let setup ?db () =
   let exec db = Lwt_list.iter_s (execute ~db) table_queries in
-  match db with
-    | Some db -> exec db
-    | None -> transaction exec
+  match db with Some db -> exec db | None -> transaction exec

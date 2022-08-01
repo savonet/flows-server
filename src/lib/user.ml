@@ -118,7 +118,7 @@ let create ?email ?last_sign_in_at ~db ~name ~password () =
     | _ -> assert false
 
 let update_last_sign_at_query =
-  "UPDATE flows_user SET update_last_sign_in_at = to_timestamp($1) WHERE id = $2"
+  "UPDATE flows_user SET last_sign_in_at = to_timestamp($1) WHERE id = $2"
 
 let update_last_sign_at ~db user =
   let last_sign_in_at = Unix.time () in

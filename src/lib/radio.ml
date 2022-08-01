@@ -110,7 +110,7 @@ let select_query =
     artist,
     title,
     extract(epoch from updated_at),
-    extract(epoch from created_at),
+    extract(epoch from created_at)
   FROM radio
   WHERE id = $1"
 
@@ -135,7 +135,7 @@ let find_query =
     artist,
     title,
     extract(epoch from updated_at),
-    extract(epoch from created_at),
+    extract(epoch from created_at)
   FROM radio
   WHERE name = $1
   AND user_id = $2"
@@ -171,7 +171,7 @@ let sync_streams ~db ~streams id =
             ]
         db
         "INSERT INTO stream (radio_id, format, url, updated_at, created_at)
-         VALUES ($1, $2, to_timestamp($3), to_timestamp($4))")
+         VALUES ($1, $2, $3, to_timestamp($4), to_timestamp($5))")
     streams
 
 let update_query =
@@ -189,7 +189,7 @@ let update_query =
      artist = $9,
      title = $10,
      created_at = to_timestamp($11),
-     updated_at = to_timestamp($12),
+     updated_at = to_timestamp($12)
    WHERE id = $13"
 
 let update ~db radio =
@@ -314,9 +314,10 @@ let page_query =
     latitude,
     artist,
     title,
-    updated_at,
-    created_at
+    extract(epoch from updated_at),
+    extract(epoch from created_at)
   FROM radio
+  WHERE updated_at > NOW() - interval '1 day'
   OFFSET $1
   LIMIT $2"
 
