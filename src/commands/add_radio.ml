@@ -28,7 +28,9 @@ let exec ~get_user ~get_param_opt ~get_param_string_opt ~get_param_string ~ip ()
       | Some _ -> raise (Invalid_parameter "streams")
   in
   Db.transaction (fun db ->
-      let user = get_user ~db () in
-      ignore
-        (Radio.create ~name ?website ~user ?description ?genre ?logo ?longitude
-           ?latitude ~db ~streams ()))
+      let%lwt user = get_user ~db () in
+      let%lwt _ =
+        Radio.create ~name ?website ~user ?description ?genre ?logo ?longitude
+          ?latitude ~db ~streams ()
+      in
+      Lwt.return ())

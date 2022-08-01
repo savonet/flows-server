@@ -1,27 +1,11 @@
-(env
- (dev
-  (env-vars
-   (PGHOST localhost))))
-
 (include_subdirs unqualified)
 
 (executable
  (name flows)
  (public_name flows)
- (preprocessor_deps db_config.sexp)
  (preprocess
-  (pps ppx_stable ppx_yojson_conv pgocaml_ppx))
- (libraries db pgocaml uri lwt cohttp-lwt-unix sha yojson))
-
-(rule
- (target db_config.sexp)
- (deps
-  (:db_setup ../db/db_setup.exe)
-  (:db_config ../db/db_config.sexp))
- (action
-  (progn
-   (run %{db_setup})
-   (copy %{db_config} %{target}))))
+  (pps lwt_ppx ppx_stable ppx_yojson_conv))
+ (libraries pgx_lwt_unix uri lwt cohttp-lwt-unix sha yojson))
 
 (rule
  (alias run)

@@ -20,33 +20,39 @@ let exec ~respond_string ~params ~ip () =
   let email = get_param_string_opt "email" in
   let radio = get_param_string "radio" in
   let get_user ~db () =
-    match User.valid_or_register ~db ~user ~password ?email () with
-      | Some user -> user
+    match%lwt User.valid_or_register ~db ~user ~password ?email () with
+      | Some user -> Lwt.return user
       | None -> raise (Invalid_password user)
   in
   let get_radio ~db () =
-    let user = get_user ~db () in
-    match Radio.find ~db ~user radio with
-      | Some r -> r
+    let%lwt user = get_user ~db () in
+    match%lwt Radio.find ~db ~user radio with
+      | Some r -> Lwt.return r
       | None -> raise (Invalid_radio radio)
   in
   let command = get_param_string "command" in
   match command with
     | "ping radio" ->
-        Db.transaction (fun db ->
-            let radio = get_radio ~db () in
-            Radio.ping ~db radio);
+        let%lwt () =
+          Db.transaction (fun db ->
+              let%lwt radio = get_radio ~db () in
+              Radio.ping ~db radio)
+        in
         respond_string ~status:`OK ~body:"pong radio" ()
     | "add radio" ->
-        Add_radio.exec ~get_user ~get_param_opt ~get_param_string_opt
-          ~get_param_string ~ip ();
+        let%lwt () =
+          Add_radio.exec ~get_user ~get_param_opt ~get_param_string_opt
+            ~get_param_string ~ip ()
+        in
         ok ()
     | "metadata" ->
-        Db.transaction (fun db ->
-            let radio = get_radio ~db () in
-            let artist = Some (get_param_string "artist") in
-            let title = Some (get_param_string "title") in
-            Radio.set_metadata radio ~db ~artist ~title);
+        let%lwt () =
+          Db.transaction (fun db ->
+              let%lwt radio = get_radio ~db () in
+              let artist = Some (get_param_string "artist") in
+              let title = Some (get_param_string "title") in
+              Radio.set_metadata radio ~db ~artist ~title)
+        in
         ok ()
     | _ ->
         respond_string ~status:(`Code 400)

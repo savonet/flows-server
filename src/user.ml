@@ -1,101 +1,145 @@
 (** Users. *)
 
-type sha256 = Sha256.t
-
 (** An user. *)
 type t = {
   id : int;
   name : string;
-  password : sha256;
+  password : Sha256.t;
   email : string option;
   last_sign_in_at : float option;
   created_at : float;
   updated_at : float;
 }
 
-let populate user =
-  {
-    id = user#id;
-    name = user#name;
-    password = user#password;
-    email = user#email;
-    last_sign_in_at = user#last_sign_in_at;
-    created_at = user#created_at;
-    updated_at = user#updated_at;
-  }
+let populate = function
+  | [id; name; password; email; last_sign_in_at; created_at; updated_at] ->
+      {
+        id = Pgx.Value.to_int_exn id;
+        name = Pgx.Value.to_string_exn name;
+        password = Sha256.of_hex (Pgx.Value.to_string_exn password);
+        email = Pgx.Value.to_string email;
+        last_sign_in_at = Pgx.Value.to_float last_sign_in_at;
+        created_at = Pgx.Value.to_float_exn created_at;
+        updated_at = Pgx.Value.to_float_exn updated_at;
+      }
+  | _ -> assert false
+
+let select_query =
+  "SELECT
+     id,
+     name,
+     password,
+     email,
+     last_sign_in_at,
+     created_at,
+     updated_at
+   FROM
+     flows_user
+   WHERE id = $1"
 
 let fetch ~db id =
-  let id = Int32.of_int id in
-  populate
-    (List.hd
-       [%pgsql.object
-         db "load_custom_from=src/db_config.sexp" "show=pp"
-           "SELECT * FROM flows_user WHERE id = $id"])
+  match%lwt
+    Pgx_lwt_unix.execute ~params:[Pgx.Value.of_int id] db select_query
+  with
+    | [row] -> Lwt.return (populate row)
+    | _ -> assert false
+
+let find_query =
+  "SELECT
+     id,
+     name,
+     password,
+     email,
+     last_sign_in_at,
+     created_at,
+     updated_at
+   FROM
+     flows_user
+   WHERE name = $1"
+
+let find_with_email_query =
+  "SELECT
+     id,
+     name,
+     password,
+     email,
+     last_sign_in_at,
+     created_at,
+     updated_at
+   FROM
+     flows_user
+   WHERE name = $1
+   AND email = $2"
 
 let find ?email ~db name =
-  let req =
+  let query, params =
     match email with
+      | None -> (find_query, [Pgx.Value.of_string name])
       | Some email ->
-          [%pgsql.object
-            db "load_custom_from=src/db_config.sexp" "show=pp"
-              "SELECT * FROM flows_user WHERE name = $name AND email = $email"]
-      | None ->
-          [%pgsql.object
-            db "load_custom_from=src/db_config.sexp" "show=pp"
-              "SELECT * FROM flows_user WHERE name = $name"]
+          (find_with_email_query, Pgx.Value.[of_string name; of_string email])
   in
-  match req with [] -> None | user :: _ -> Some (populate user)
+  match%lwt Pgx_lwt_unix.execute ~params db query with
+    | row :: _ -> Lwt.return (Some (populate row))
+    | _ -> Lwt.return None
 
-let update ~db user =
-  let { id; name; password; email; last_sign_in_at; created_at; _ } = user in
-  let updated_at = Unix.time () in
-  let id = Int32.of_int id in
-  let password = Sha256.to_hex password in
-  let () =
-    [%pgsql
-      db "load_custom_from=src/db_config.sexp" "show=pp"
-        "UPDATE flows_user SET
-       name = $name,
-       password = $password,
-       email = $?email,
-       last_sign_in_at = $?last_sign_in_at,
-       created_at = $created_at,
-       updated_at = $updated_at
-    WHERE id = $id"]
-  in
-  { user with updated_at }
+let create_query =
+  "INSERT INTO
+      flows_user (name, password, email, last_sign_in_at, created_at, updated_at)
+    VALUES
+                 ($1,   $2,       $3,    $4,             $5,          $6)
+    RETURNING id"
 
 let create ?email ?last_sign_in_at ~db ~name ~password () =
-  let password = Sha256.to_hex password in
   let created_at = Unix.time () in
-  let id =
-    List.hd
-      [%pgsql
-        db "load_custom_from=src/db_config.sexp" "show=pp"
-          "INSERT INTO
-       flows_user (name, password, email, last_sign_in_at, created_at, updated_at)
-     VALUES ($name, $password, $?email, $?last_sign_in_at, $created_at, $created_at)
-     RETURNING id"]
+  let params =
+    Pgx.Value.
+      [
+        of_string name;
+        of_string (Sha256.to_hex password);
+        opt of_string email;
+        opt of_float last_sign_in_at;
+        of_float created_at;
+        of_float created_at;
+      ]
   in
-  {
-    id;
-    name;
-    password = Sha256.of_hex password;
-    email;
-    last_sign_in_at;
-    created_at;
-    updated_at = created_at;
-  }
+  match%lwt Pgx_lwt_unix.execute ~params db create_query with
+    | [id] :: _ ->
+        Lwt.return
+          {
+            id = Pgx.Value.to_int_exn id;
+            name;
+            password;
+            email;
+            last_sign_in_at;
+            created_at;
+            updated_at = created_at;
+          }
+    | _ -> assert false
+
+let update_last_sign_at_query =
+  "UPDATE flows_user SET update_last_sign_in_at $1 WHERE id = $2"
+
+let update_last_sign_at ~db user =
+  let last_sign_in_at = Unix.time () in
+  let%lwt () =
+    Pgx_lwt_unix.execute_unit
+      ~params:Pgx.Value.[of_float last_sign_in_at; of_int user.id]
+      db update_last_sign_at_query
+  in
+  Lwt.return { user with last_sign_in_at = Some last_sign_in_at }
 
 (** Test whether the user/pass combination is valid. Register it if the user
     does not already exist. *)
 let valid_or_register ?email ~db ~user ~password () =
   let password = Sha256.string password in
-  match find ?email ~db user with
+  match%lwt find ?email ~db user with
     | Some user when Sha256.equal password user.password ->
-        Some (update ~db { user with last_sign_in_at = Some (Unix.time ()) })
-    | Some _ -> None
+        let%lwt user = update_last_sign_at ~db user in
+        Lwt.return (Some user)
+    | Some _ -> Lwt.return None
     | None ->
-        Some
-          (create ~db ~name:user ~password ?email
-             ~last_sign_in_at:(Unix.time ()) ())
+        let%lwt user =
+          create ~db ~name:user ~password ?email ~last_sign_in_at:(Unix.time ())
+            ()
+        in
+        Lwt.return (Some user)
