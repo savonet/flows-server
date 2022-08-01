@@ -66,17 +66,9 @@ let run_tests db =
 
 let runner () =
   let%lwt db = Db.db () in
-  let%lwt () =
-    Pgx_lwt_unix.execute_unit ~params:[] db "CREATE DATABASE flows_test"
-  in
-  let%lwt () = Pgx_lwt_unix.close db in
-  let%lwt db = Db.db ~database:"flows_test" () in
+  let%lwt db = Pgx_lwt_unix.begin_work db in
   let finalize () =
-    let%lwt () = Pgx_lwt_unix.close db in
-    let%lwt db = Db.db () in
-    let%lwt () =
-      Pgx_lwt_unix.execute_unit ~params:[] db "DROP DATABASE flows_test"
-    in
+    let%lwt () = Pgx_lwt_unix.rollback db in
     Pgx_lwt_unix.close db
   in
   (run_tests db) [%lwt.finally finalize ()]

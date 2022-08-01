@@ -38,3 +38,4 @@ jobs:
       env:
         PGUSER: postgres
         PGPASSWORD: postgres 
+        PGDATABASE: postgres
