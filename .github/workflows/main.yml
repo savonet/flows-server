@@ -41,6 +41,9 @@ jobs:
         PGUSER: postgres
         PGPASSWORD: postgres
         PGDATABASE: postgres
+    - name: Setup upterm session
+      uses: lhotari/action-upterm@v1
+      if: failure()
 
   deploy:
     runs-on: ubuntu-latest
