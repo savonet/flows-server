@@ -109,8 +109,8 @@ let select_query =
     latitude,
     artist,
     title,
-    updated_at,
-    created_at
+    extract(epoch from updated_at),
+    extract(epoch from created_at),
   FROM radio
   WHERE id = $1"
 
@@ -134,8 +134,8 @@ let find_query =
     latitude,
     artist,
     title,
-    updated_at,
-    created_at
+    extract(epoch from updated_at),
+    extract(epoch from created_at),
   FROM radio
   WHERE name = $1
   AND user_id = $2"
@@ -171,7 +171,7 @@ let sync_streams ~db ~streams id =
             ]
         db
         "INSERT INTO stream (radio_id, format, url, updated_at, created_at)
-         VALUES ($1, $2, $3, $4)")
+         VALUES ($1, $2, to_timestamp($3), to_timestamp($4))")
     streams
 
 let update_query =
@@ -188,8 +188,8 @@ let update_query =
      latitude = $8,
      artist = $9,
      title = $10,
-     created_at = $11,
-     updated_at = $12,
+     created_at = to_timestamp($11),
+     updated_at = to_timestamp($12),
    WHERE id = $13"
 
 let update ~db radio =
@@ -236,8 +236,8 @@ let update ~db radio =
 
 let insert_query =
   "INSERT INTO
-      radio (name, user_id, website, description, genre, logo, longitude, latitude, artist, title, created_at, updated_at)
-   VALUES   ($1,   $2,      $3,      $4,          $5,    $6,   $7,        $8,       $9,     $10,   $11,        $12)
+      radio (name, user_id, website, description, genre, logo, longitude, latitude, artist, title, created_at,        updated_at)
+   VALUES   ($1,   $2,      $3,      $4,          $5,    $6,   $7,        $8,       $9,     $10,   to_timestamp($11), to_timestamp($12))
    RETURNING id"
 
 let create ?website ?description ?genre ?logo ?longitude ?latitude ?artist

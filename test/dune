@@ -1,0 +1,5 @@
+(executable
+ (name test)
+ (preprocess
+  (pps lwt_ppx))
+ (libraries flows))

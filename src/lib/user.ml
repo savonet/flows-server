@@ -30,9 +30,9 @@ let select_query =
      name,
      password,
      email,
-     last_sign_in_at,
-     created_at,
-     updated_at
+     extract(epoch from last_sign_in_at),
+     extract(epoch from created_at),
+     extract(epoch from updated_at)
    FROM
      flows_user
    WHERE id = $1"
@@ -50,9 +50,9 @@ let find_query =
      name,
      password,
      email,
-     last_sign_in_at,
-     created_at,
-     updated_at
+     extract(epoch from last_sign_in_at),
+     extract(epoch from created_at),
+     extract(epoch from updated_at)
    FROM
      flows_user
    WHERE name = $1"
@@ -63,9 +63,9 @@ let find_with_email_query =
      name,
      password,
      email,
-     last_sign_in_at,
-     created_at,
-     updated_at
+     extract(epoch from last_sign_in_at),
+     extract(epoch from created_at),
+     extract(epoch from updated_at)
    FROM
      flows_user
    WHERE name = $1
@@ -84,12 +84,13 @@ let find ?email ~db name =
 
 let create_query =
   "INSERT INTO
-      flows_user (name, password, email, last_sign_in_at, created_at, updated_at)
+      flows_user (name, password, email, last_sign_in_at,  created_at,       updated_at)
     VALUES
-                 ($1,   $2,       $3,    $4,             $5,          $6)
+                 ($1,   $2,       $3,    to_timestamp($4), to_timestamp($5), to_timestamp($6))
     RETURNING id"
 
 let create ?email ?last_sign_in_at ~db ~name ~password () =
+  let password = Sha256.string password in
   let created_at = Unix.time () in
   let params =
     Pgx.Value.
@@ -117,7 +118,7 @@ let create ?email ?last_sign_in_at ~db ~name ~password () =
     | _ -> assert false
 
 let update_last_sign_at_query =
-  "UPDATE flows_user SET update_last_sign_in_at $1 WHERE id = $2"
+  "UPDATE flows_user SET update_last_sign_in_at = to_timestamp($1) WHERE id = $2"
 
 let update_last_sign_at ~db user =
   let last_sign_in_at = Unix.time () in
@@ -131,9 +132,8 @@ let update_last_sign_at ~db user =
 (** Test whether the user/pass combination is valid. Register it if the user
     does not already exist. *)
 let valid_or_register ?email ~db ~user ~password () =
-  let password = Sha256.string password in
   match%lwt find ?email ~db user with
-    | Some user when Sha256.equal password user.password ->
+    | Some user when Sha256.equal (Sha256.string password) user.password ->
         let%lwt user = update_last_sign_at ~db user in
         Lwt.return (Some user)
     | Some _ -> Lwt.return None

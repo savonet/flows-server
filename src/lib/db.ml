@@ -74,5 +74,8 @@ let table_queries =
       updated_at TIMESTAMP WITH TIME ZONE NOT NULL)";
   ]
 
-let setup () =
-  transaction (fun db -> Lwt_list.iter_s (execute ~db) table_queries)
+let setup ?db () =
+  let exec db = Lwt_list.iter_s (execute ~db) table_queries in
+  match db with
+    | Some db -> exec db
+    | None -> transaction exec

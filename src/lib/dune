@@ -1,13 +1,7 @@
 (include_subdirs unqualified)
 
-(executable
+(library
  (name flows)
- (public_name flows)
  (preprocess
   (pps lwt_ppx ppx_stable ppx_yojson_conv))
  (libraries pgx_lwt_unix uri lwt cohttp-lwt-unix sha yojson))
-
-(rule
- (alias run)
- (action
-  (run ./flows.exe)))
