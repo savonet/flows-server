@@ -36,6 +36,8 @@ jobs:
     - name: Run tests
       run: opam exec dune runtest
       env:
+        PGHOST: localhost
+        PGPORT: 5432
         PGUSER: postgres
         PGPASSWORD: postgres 
         PGDATABASE: postgres
