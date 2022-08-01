@@ -34,7 +34,7 @@ jobs:
     - name: Install
       run: opam install liquidsoap-flows-server
     - name: Run tests
-      run: dune runtest
+      run: opam exec dune runtest
       env:
         PGUSER: postgres
         PGPASSWORD: postgres 
