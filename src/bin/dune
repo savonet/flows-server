@@ -1,0 +1,11 @@
+(executable
+ (name flows)
+ (public_name flows)
+ (preprocess
+  (pps lwt_ppx ppx_yojson_conv))
+ (libraries flows))
+
+(rule
+ (alias run)
+ (action
+  (run ./flows.exe)))

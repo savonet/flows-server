@@ -1,19 +1,43 @@
-name: Build
-on: [push]
+name: Build and deploy
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
-    runs-on: ${{ matrix.operating-system }}
-    strategy:
-      matrix:
-        operating-system: [ubuntu-latest]
-        ocaml-version: ['4.14.0']
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     steps:
     - uses: actions/checkout@v2
     - uses: ocaml/setup-ocaml@v2
       with:
-        ocaml-version: ${{ matrix.ocaml-version }}
-    - run: opam pin add -n .
+        dune-cache: true
     - name: Install dependencies
-      run: opam depext -yt liquidsoap-flows-server
-    - name: Build and install
-      run: opam install -t .
+      run: opam list --short --color=never --required-by=liquidsoap-flows-server | xargs opam install -y
+    - name: Install
+      run: opam install liquidsoap-flows-server
+    - name: Run tests
+      run: opam exec dune runtest
+      env:
+        PGHOST: localhost
+        PGPORT: 5432
+        PGUSER: postgres
+        PGPASSWORD: postgres 
+        PGDATABASE: postgres

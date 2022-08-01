@@ -7,6 +7,9 @@ maintainer: ["The Savonet Team <savonet-users@lists.sourceforge.net>"]
 authors: ["Samuel Mimram <smimram@gmail.com>"]
 depends: [
   "dune" {>= "3.2"}
+  "uri"
+  "pgx_lwt_unix"
+  "lwt_ppx"
   "cohttp-lwt-unix"
   "ppx_stable"
   "ppx_yojson_conv"

@@ -1,16 +1,17 @@
 open Commands_base
 
-let exec ~user ~get_param_opt ~get_param_string ~ip () =
+let exec ~get_user ~get_param_opt ~get_param_string_opt ~get_param_string ~ip ()
+    =
   let name = get_param_string "radio" in
-  let website = get_param_string "website" in
-  let description = get_param_string "description" in
-  let genre = get_param_string "genre" in
-  let logo = get_param_string "logo" in
+  let website = get_param_string_opt "website" in
+  let description = get_param_string_opt "description" in
+  let genre = get_param_string_opt "genre" in
+  let logo = get_param_string_opt "logo" in
   let geoip = GeoIP.lookup_opt ip in
   let latitude, longitude =
     match geoip with
-      | Some geoip -> (geoip.latitude, geoip.longitude)
-      | None -> (0., 0.)
+      | Some geoip -> (Some geoip.latitude, Some geoip.longitude)
+      | None -> (None, None)
   in
   let streams =
     match get_param_opt "streams" with
@@ -26,5 +27,10 @@ let exec ~user ~get_param_opt ~get_param_string ~ip () =
             l
       | Some _ -> raise (Invalid_parameter "streams")
   in
-  Radio.register ~name ~website ~user ~description ~genre ~logo ~longitude
-    ~latitude ~streams ()
+  Db.transaction (fun db ->
+      let%lwt user = get_user ~db () in
+      let%lwt _ =
+        Radio.create ~name ?website ~user ?description ?genre ?logo ?longitude
+          ?latitude ~db ~streams ()
+      in
+      Lwt.return ())

@@ -1,7 +1,7 @@
 open Lwt.Syntax
 open Cohttp
 open Cohttp_lwt_unix
-open Extlib
+open Flows
 open Commands
 
 let port =
@@ -18,7 +18,10 @@ let cors_headers =
 let respond_string ~status ~body () =
   Server.respond_string ~headers:cors_headers ~status ~body ()
 
-let server =
+type 'a page = { pp : int; page : int; total : int; data : 'a list }
+[@@deriving yojson]
+
+let server () =
   let callback conn req body =
     let ip =
       match fst conn with
@@ -55,8 +58,20 @@ let server =
                     | _ -> failwith "Invalid JSON.")
               | _ -> failwith "Not implemented")
         | "/radios" ->
-            let body = Radio.all_to_json () in
-            respond_string ~status:`OK ~body ()
+            let pp = try int_of_string (List.assoc "pp" query) with _ -> 10 in
+            let page =
+              try int_of_string (List.assoc "page" query) with _ -> 1
+            in
+            let%lwt total, data =
+              Db.transaction (fun db ->
+                  let%lwt count = Radio.count ~db () in
+                  let%lwt data = Radio.get_page ~db ~pp ~page () in
+                  Lwt.return (count / pp, data))
+            in
+            let body = yojson_of_page Radio.to_json { pp; page; total; data } in
+            respond_string ~status:`OK
+              ~body:(JSON.to_string ~pretty:true body)
+              ()
         | _ ->
             respond_string ~status:(`Code 404)
               ~body:(Printf.sprintf "Don't know how to serve %s." path)
@@ -92,4 +107,6 @@ let server =
 
 let () =
   Printexc.record_backtrace true;
-  Lwt_main.run server
+  Lwt_main.run
+    (let%lwt () = Db.setup () in
+     server ())
