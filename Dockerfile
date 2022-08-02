@@ -4,6 +4,12 @@ USER opam
 
 WORKDIR $HOME/flows-server
 
+RUN curl -L https://mailfud.org/geoip-legacy/GeoIPCity.dat.gz -o GeoIPCity.dat.gz && \
+    gunzip GeoIPCity.dat.gz && \
+    mkdir -p $HOME/.flows && \
+    cp GeoIPCity.dat $HOME/.flows && \
+    rm -f GeoIPCity.dat.gz
+
 COPY liquidsoap-flows-server.opam $HOME/flows-server/liquidsoap-flows-server.opam
 
 RUN opam pin -n .

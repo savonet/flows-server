@@ -1,4 +1,4 @@
-let dat = "GeoIPCity.dat"
+let dat = (Sys.getenv "HOME") ^ "/.flows/GeoIPCity.dat"
 
 let () =
   if Sys.command "geoiplookup -v localhost > /dev/null" <> 0 then
