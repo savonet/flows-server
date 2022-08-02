@@ -2,23 +2,32 @@ include Commands_base
 
 let exec ~respond_string ~params ~ip () =
   let ok () = respond_string ~status:`OK ~body:"Done." () in
-  let get_param_opt k = List.assoc_opt k params in
-  let get_param_string_opt k =
-    match get_param_opt k with Some p -> Some (JSON.string p) | None -> None
-  in
-  let get_param_string k =
-    match get_param_opt k with
-      | Some p -> JSON.string p
-      | None -> raise (Missing_parameter k)
+  let params =
+    {
+      get = (fun k -> List.assoc k params);
+      get_opt = (fun k -> List.assoc_opt k params);
+      string =
+        (fun k ->
+          match List.assoc_opt k params with
+            | Some (`String p) -> p
+            | Some _ -> raise (Invalid_parameter k)
+            | None -> raise (Missing_parameter k));
+      string_opt =
+        (fun k ->
+          match List.assoc_opt k params with
+            | Some (`String p) -> Some p
+            | Some `Null | None -> None
+            | _ -> raise (Invalid_parameter k));
+    }
   in
   let user =
-    match get_param_opt "user" with
+    match params.get_opt "user" with
       | Some (`String u) -> u
       | _ -> raise (Invalid_parameter "user")
   in
-  let password = get_param_string "password" in
-  let email = get_param_string_opt "email" in
-  let radio = get_param_string "radio" in
+  let password = params.string "password" in
+  let email = params.string_opt "email" in
+  let radio = params.string "radio" in
   let get_user ~db () =
     match User.valid_or_register ~db ~user ~password ?email () with
       | Some user -> user
@@ -30,7 +39,7 @@ let exec ~respond_string ~params ~ip () =
       | Some r -> r
       | None -> raise (Invalid_radio radio)
   in
-  let command = get_param_string "command" in
+  let command = params.string "command" in
   match command with
     | "ping radio" ->
         Db.transaction (fun db ->
@@ -38,15 +47,13 @@ let exec ~respond_string ~params ~ip () =
             Radio.ping ~db radio);
         respond_string ~status:`OK ~body:"pong radio" ()
     | "add radio" ->
-        ignore
-          (Add_radio.exec ~get_user ~get_param_opt ~get_param_string_opt
-             ~get_param_string ~ip ());
+        ignore (Add_radio.exec ~get_user ~params ~ip ());
         ok ()
     | "metadata" ->
         Db.transaction (fun db ->
             let radio = get_radio ~db () in
-            let artist = Some (get_param_string "artist") in
-            let title = Some (get_param_string "title") in
+            let artist = Some (params.string "artist") in
+            let title = Some (params.string "title") in
             Radio.set_metadata radio ~db ~artist ~title);
         ok ()
     | _ ->

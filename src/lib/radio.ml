@@ -5,6 +5,8 @@ open Utils
 (** A stream. *)
 type stream = { format : string; url : string } [@@deriving yojson]
 
+type streams = stream list [@@deriving yojson]
+
 (* Public radio payload *)
 module Public = struct
   type t = {

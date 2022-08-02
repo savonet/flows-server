@@ -16,22 +16,16 @@ flows = ()
 #                 and the url of the stream. The format should be \
 #                 of the form "ogg/128k" consisting of the codec and \
 #                 the bitrate, separated by "/".
-def flows.register(~server=null(),~user=null(),~password="default",
-                  ~mail="",~radio,~website,~description,~genre,~logo="",
-                  ~streams,s)
+def flows.register(~server=null(),~user,~password,~radio,
+                  ~email=null(),~website=null(),~description=null(),
+                  ~genre=null(),~logo=null(),~streams,s)
 
   # Get default value for server
   server =
     if null.defined(server) then
       null.get(server)
     else
-      let data = http.get("http://www.liquidsoap.info/flows_server")
-      if data.status_code == 200 then
-        data
-      else
-        # If sf is down, we use the hardcoded server
-        "http://savonet.rastageeks.org/liqflows.py"
-      end
+      "https://flows-api.liquidsoap.info/"
     end
   log(level=4,"Flows server: #{server}")
 
@@ -39,7 +33,7 @@ def flows.register(~server=null(),~user=null(),~password="default",
   ping_period = 600. # Pinging period in seconds
 
   def request(cmd, params) =
-    cmd = params.{command = cmd, version = "0.1", user=user, password=password, mail=mail, radio=radio}
+    cmd = params.{command = cmd, version = "0.1", user=user, password=password, email=email, radio=radio}
     log = fun(~level, s) -> log(label=radio, level=level, s)
     log(level=4,"Processing command #{string_of(cmd)}")
 
@@ -60,16 +54,6 @@ def flows.register(~server=null(),~user=null(),~password="default",
     ignore(request("ping radio", {}))
   end
   thread.run(fast=false, every=ping_period, ping)
-
-  # Register streams
-  def register_stream(format_url)
-    # let (format, url) = format_url
-    # params = [("format",format), ("url",url)]
-    # request(cmd="add stream", params=params)
-    ()
-  end
-  # request(cmd="clear streams",params=[])
-  list.iter(register_stream,streams)
 
   # Metadata update
   def metadata(m) =

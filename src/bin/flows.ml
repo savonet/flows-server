@@ -98,9 +98,11 @@ let server =
             ~body:(Printf.sprintf "Failure: %s." s)
             ()
       | e ->
+          let bt = Printexc.get_backtrace () in
           respond_string ~status:(`Code 500)
             ~body:
-              (Printf.sprintf "Unexpected error: %s." (Printexc.to_string e))
+              (Printf.sprintf "Unexpected error: %s\n%s" (Printexc.to_string e)
+                 bt)
             ()
   in
   Server.create ~mode:(`TCP (`Port port)) (Server.make ~callback ())
