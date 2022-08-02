@@ -16,9 +16,9 @@ flows = ()
 #                 and the url of the stream. The format should be \
 #                 of the form "ogg/128k" consisting of the codec and \
 #                 the bitrate, separated by "/".
-def flows.register(~server=null(),~user,~password,~radio,
-                  ~email=null(),~website=null(),~description=null(),
-                  ~genre=null(),~logo=null(),~streams,s)
+def flows.register(~server=null(),~email,~password,~radio,
+                   ~website=null(),~description=null(),
+                   ~genre=null(),~logo=null(),~streams,s)
 
   # Get default value for server
   server =
@@ -32,8 +32,8 @@ def flows.register(~server=null(),~user,~password,~radio,
   # Initial variables
   ping_period = 600. # Pinging period in seconds
 
-  def request(cmd, params) =
-    cmd = params.{command = cmd, version = "0.1", user=user, password=password, email=email, radio=radio}
+  def request(cmd, payload) =
+    cmd = {command = cmd, version = "0.1", email=email, password=password, payload=payload}
     log = fun(~level, s) -> log(label=radio, level=level, s)
     log(level=4,"Processing command #{string_of(cmd)}")
 
@@ -47,11 +47,22 @@ def flows.register(~server=null(),~user,~password,~radio,
 
   # Register radio
   streams = list.map(fun(s) -> {format=fst(s), url=snd(s)}, streams)
-  request("add radio", {website=website, description=description, genre=genre, logo=logo, streams=streams})
+  request("add radio", {
+    name=radio,
+    website=website,
+    description=description,
+    genre=genre,
+    logo=logo,
+    latitude=null(),
+    longitude=null(),
+    artist=null(),
+    title=null(),
+    streams=streams
+  })
 
   # Ping
   def ping() =
-    ignore(request("ping radio", {}))
+    ignore(request("ping radio", {name=radio}))
   end
   thread.run(fast=false, every=ping_period, ping)
 
@@ -59,7 +70,7 @@ def flows.register(~server=null(),~user,~password,~radio,
   def metadata(m) =
     artist = m["artist"]
     title  = m["title"]
-    thread.run({request("metadata",{artist=artist, title=title})})
+    thread.run({request("metadata",{name=radio, artist=artist, title=title})})
   end
   source.on_metadata(s, metadata)
 end

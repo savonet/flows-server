@@ -63,8 +63,7 @@ let table_queries =
   [
     "CREATE TABLE IF NOT EXISTS flows_user (
       id SERIAL PRIMARY KEY,
-      name TEXT NOT NULL UNIQUE,
-      email TEXT,
+      email TEXT NOT NULL UNIQUE,
       password VARCHAR NOT NULL,
       last_sign_in_at TIMESTAMP WITH TIME ZONE,
       created_at TIMESTAMP WITH TIME ZONE NOT NULL,

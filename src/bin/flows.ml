@@ -93,6 +93,11 @@ let server =
           respond_string ~status:(`Code 400)
             ~body:(Printf.sprintf "Unknown radio: %s." r)
             ()
+      | Ppx_yojson_conv_lib.Yojson_conv.Of_yojson_error (exn, _) ->
+          respond_string ~status:(`Code 400)
+            ~body:
+              (Printf.sprintf "Invalid payload: %s" (Printexc.to_string exn))
+            ()
       | Failure s ->
           respond_string ~status:(`Code 500)
             ~body:(Printf.sprintf "Failure: %s." s)

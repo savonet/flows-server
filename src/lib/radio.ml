@@ -10,7 +10,6 @@ type streams = stream list [@@deriving yojson]
 (* Public radio payload *)
 module Public = struct
   type t = {
-    id : int;
     name : string;
     website : string option;
     description : string option;
@@ -43,7 +42,7 @@ type t = {
   updated_at : float;
 }
 [@@deriving
-  stable_record ~version:Public.t ~remove:[user; created_at; updated_at]]
+  stable_record ~version:Public.t ~remove:[id; user; created_at; updated_at]]
 
 let streams_query = "SELECT * FROM stream WHERE radio_id = $1"
 
@@ -201,8 +200,19 @@ let insert_query =
    VALUES   ($1,   $2,      $3,      $4,          $5,    $6,   $7,        $8,       $9,     $10,   to_timestamp($11), to_timestamp($12))
    RETURNING id"
 
-let create ?website ?description ?genre ?logo ?longitude ?latitude ?artist
-    ?title ~(db : Db.db) ~streams ~name ~user () =
+let create ~(db : Db.db) ~user
+    {
+      Public.name;
+      website;
+      description;
+      genre;
+      logo;
+      longitude;
+      latitude;
+      artist;
+      title;
+      streams;
+    } =
   let created_at = Unix.time () in
   let params =
     [|
@@ -244,8 +254,14 @@ let create ?website ?description ?genre ?logo ?longitude ?latitude ?artist
         }
     | _ -> assert false
 
-let to_json r = [%yojson_of: Public.t] (to_Public_t r)
 let ping ~db r = ignore (update ~db { r with updated_at = Unix.time () })
+
+let create_or_update ~(db : Db.db) ~user radio =
+  match find ~db ~user radio.Public.name with
+    | None -> ignore (create ~db ~user radio)
+    | Some r -> ping ~db r
+
+let to_json r = [%yojson_of: Public.t] (to_Public_t r)
 
 (** Set metadata of the currently playing title. *)
 let set_metadata ~db r ~artist ~title =

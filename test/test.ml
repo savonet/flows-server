@@ -4,29 +4,22 @@ let run_tests db =
   Db.setup ~db ();
   let user =
     User.create ~email:"foo@bar.com" ~last_sign_in_at:(Unix.time ()) ~db
-      ~name:"Foo" ~password:"bla" ()
+      ~password:"bla" ()
   in
   let _ = User.update_last_sign_at ~db user in
-  let user =
-    match User.find ~db "Foo" with Some user -> user | None -> assert false
-  in
   let () =
-    match User.find ~db ~email:"gni" "Foo" with
-      | Some _ -> assert false
-      | None -> ()
+    match User.find ~db "gni" with Some _ -> assert false | None -> ()
   in
   let () =
     match
-      User.valid_or_register ~db ~email:"foo@bar.com" ~user:"Foo"
-        ~password:"bla" ()
+      User.valid_or_register ~db ~email:"foo@bar.com" ~password:"bla" ()
     with
       | Some u ->
           assert (u.User.id = user.User.id);
           ()
       | None -> assert false
   in
-  assert (user.User.name = "Foo");
-  assert (user.User.email = Some "foo@bar.com");
+  assert (user.User.email = "foo@bar.com");
   assert (Sha256.equal user.User.password (Sha256.string "bla"));
 
   let streams =
@@ -36,7 +29,21 @@ let run_tests db =
     ]
   in
 
-  let radio = Radio.create ~name:"Some radio" ~db ~streams ~user () in
+  let radio =
+    Radio.create ~db ~user
+      {
+        Radio.Public.name = "Some radio";
+        website = None;
+        logo = None;
+        longitude = None;
+        latitude = None;
+        genre = None;
+        artist = None;
+        title = None;
+        description = None;
+        streams;
+      }
+  in
 
   let radio =
     Radio.update ~db

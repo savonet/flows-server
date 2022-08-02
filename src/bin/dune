@@ -2,8 +2,8 @@
  (name flows)
  (public_name flows)
  (preprocess
-  (pps lwt_ppx ppx_yojson_conv))
- (libraries flows))
+  (pps ppx_yojson_conv))
+ (libraries flows ppx_yojson_conv_lib))
 
 (rule
  (alias run)

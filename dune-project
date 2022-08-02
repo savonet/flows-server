@@ -16,6 +16,7 @@
    cohttp-lwt-unix
    ppx_stable
    ppx_yojson_conv
+   ppx_yojson_conv_lib
    sha
    yojson)
 )
