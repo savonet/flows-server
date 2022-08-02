@@ -1,4 +1,4 @@
-type db = Pgx_lwt_unix.t
+type db = Postgresql.connection
 
 val db :
   ?host:string ->
@@ -7,7 +7,7 @@ val db :
   ?password:string ->
   ?database:string ->
   unit ->
-  db Lwt.t
+  db
 
-val setup : ?db:db -> unit -> unit Lwt.t
-val transaction : (db -> 'a Lwt.t) -> 'a Lwt.t
+val setup : ?db:db -> unit -> unit
+val transaction : (db -> 'a) -> 'a

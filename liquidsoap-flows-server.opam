@@ -8,7 +8,7 @@ authors: ["Samuel Mimram <smimram@gmail.com>"]
 depends: [
   "dune" {>= "3.2"}
   "uri"
-  "pgx_lwt_unix"
+  "postgresql"
   "lwt_ppx"
   "cohttp-lwt-unix"
   "ppx_stable"

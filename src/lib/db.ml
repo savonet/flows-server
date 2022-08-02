@@ -1,11 +1,12 @@
-type db = Pgx_lwt_unix.t
+type db = Postgresql.connection
 
 let db ?host ?port ?user ?password ?database () =
+  let port = Option.map string_of_int port in
   let d_host, d_port, d_user, d_password, d_database =
     match Sys.getenv_opt "DATABASE_URL" with
       | None ->
           ( Sys.getenv_opt "PGHOST",
-            Option.map int_of_string (Sys.getenv_opt "PGPORT"),
+            Sys.getenv_opt "PGPORT",
             Sys.getenv_opt "PGUSER",
             Sys.getenv_opt "PGPASSWORD",
             Sys.getenv_opt "PGDATABASE" )
@@ -16,7 +17,11 @@ let db ?host ?port ?user ?password ?database () =
               | "" -> None
               | s -> Some (String.sub s 1 (String.length s - 1))
           in
-          (Uri.host uri, Uri.port uri, Uri.user uri, Uri.password uri, path)
+          ( Uri.host uri,
+            Option.map string_of_int (Uri.port uri),
+            Uri.user uri,
+            Uri.password uri,
+            path )
   in
   let f v d = match (v, d) with Some v, _ -> Some v | None, d -> d in
   let host, port, user, password, database =
@@ -36,18 +41,25 @@ Password: %s
 Database: %s
 |}
     (Option.value ~default:"(default)" host)
-    (Option.value ~default:"(default)" (Option.map string_of_int port))
+    (Option.value ~default:"(default)" port)
     (Option.value ~default:"(default)" user)
     (Option.value ~default:"" password)
     (Option.value ~default:"(default)" database);
 
-  Pgx_lwt_unix.connect ?host ?port ?user ?password ?database ()
+  new Postgresql.connection ?host ?port ?user ?password ?dbname:database ()
 
 let transaction fn =
-  let%lwt db = db () in
-  (Pgx_lwt_unix.with_transaction db fn) [%lwt.finally Pgx_lwt_unix.close db]
-
-let execute ~db query = Pgx_lwt_unix.execute_unit ~params:[] db query
+  let db = db () in
+  ignore (db#exec "BEGIN");
+  try
+    let ret = fn db in
+    ignore (db#exec "COMMIT");
+    ret
+  with exn ->
+    let bt = Printexc.get_raw_backtrace () in
+    ignore (db#exec "ROLLBACK");
+    db#finish;
+    Printexc.raise_with_backtrace exn bt
 
 let table_queries =
   [
@@ -83,5 +95,7 @@ let table_queries =
   ]
 
 let setup ?db () =
-  let exec db = Lwt_list.iter_s (execute ~db) table_queries in
+  let exec (db : db) =
+    List.iter (fun query -> ignore (db#exec query)) table_queries
+  in
   match db with Some db -> exec db | None -> transaction exec

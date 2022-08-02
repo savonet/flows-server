@@ -11,7 +11,7 @@
  (description "This server allows registering Liquidsoap radios using the flows protocol.")
  (depends
    uri
-   pgx_lwt_unix
+   postgresql
    lwt_ppx
    cohttp-lwt-unix
    ppx_stable

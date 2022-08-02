@@ -4,4 +4,4 @@
  (name flows)
  (preprocess
   (pps lwt_ppx ppx_stable ppx_yojson_conv))
- (libraries pgx_lwt_unix uri lwt cohttp-lwt-unix sha yojson))
+ (libraries postgresql uri lwt cohttp-lwt-unix sha yojson))

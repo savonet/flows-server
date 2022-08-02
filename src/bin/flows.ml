@@ -21,7 +21,7 @@ let respond_string ~status ~body () =
 type 'a page = { pp : int; page : int; total : int; data : 'a list }
 [@@deriving yojson]
 
-let server () =
+let server =
   let callback conn req body =
     let ip =
       match fst conn with
@@ -62,11 +62,11 @@ let server () =
             let page =
               try int_of_string (List.assoc "page" query) with _ -> 1
             in
-            let%lwt total, data =
+            let total, data =
               Db.transaction (fun db ->
-                  let%lwt count = Radio.count ~db () in
-                  let%lwt data = Radio.get_page ~db ~pp ~page () in
-                  Lwt.return (count / pp, data))
+                  let count = Radio.count ~db () in
+                  let data = Radio.get_page ~db ~pp ~page () in
+                  (count / pp, data))
             in
             let body = yojson_of_page Radio.to_json { pp; page; total; data } in
             respond_string ~status:`OK
@@ -107,6 +107,5 @@ let server () =
 
 let () =
   Printexc.record_backtrace true;
-  Lwt_main.run
-    (let%lwt () = Db.setup () in
-     server ())
+  Db.setup ();
+  Lwt_main.run server

@@ -1,5 +1,7 @@
 (** Operations on radios. *)
 
+open Utils
+
 (** A stream. *)
 type stream = { format : string; url : string } [@@deriving yojson]
 
@@ -41,137 +43,95 @@ type t = {
 [@@deriving
   stable_record ~version:Public.t ~remove:[user; created_at; updated_at]]
 
-let streams_query = "SELECT format, url FROM stream WHERE radio_id = $1"
+let streams_query = "SELECT * FROM stream WHERE radio_id = $1"
 
-let get_streams ~db id =
-  let%lwt streams =
-    Pgx_lwt_unix.execute ~params:[Pgx.Value.of_int id] db streams_query
-  in
-  Lwt_list.map_p
-    (function
-      | [format; url] ->
-          Lwt.return
-            {
-              format = Pgx.Value.to_string_exn format;
-              url = Pgx.Value.to_string_exn url;
-            }
-      | _ -> assert false)
-    streams
+let get_streams ~(db : Db.db) id =
+  List.map
+    (fun { string; _ } -> { format = string "format"; url = string "url" })
+    (list_of_result
+       (db#exec ~expect:[Postgresql.Tuples_ok]
+          ~params:[| string_of_int id |]
+          streams_query))
 
-let populate ~db = function
-  | [
-      id;
-      user_id;
-      website;
-      name;
-      logo;
-      description;
-      genre;
-      longitude;
-      latitude;
-      artist;
-      title;
-      updated_at;
-      created_at;
-    ] ->
-      let id = Pgx.Value.to_int_exn id in
-      let%lwt streams = get_streams ~db id in
-      let%lwt user = User.fetch ~db (Pgx.Value.to_int_exn user_id) in
-      Lwt.return
-        {
-          id;
-          user;
-          website = Pgx.Value.to_string website;
-          name = Pgx.Value.to_string_exn name;
-          logo = Pgx.Value.to_string logo;
-          description = Pgx.Value.to_string description;
-          genre = Pgx.Value.to_string genre;
-          longitude = Pgx.Value.to_float longitude;
-          latitude = Pgx.Value.to_float latitude;
-          artist = Pgx.Value.to_string artist;
-          title = Pgx.Value.to_string title;
-          streams;
-          updated_at = Pgx.Value.to_float_exn updated_at;
-          created_at = Pgx.Value.to_float_exn created_at;
-        }
-  | _ -> assert false
+let populate ~(db : Db.db) { int; string; string_opt; float; float_opt; _ } =
+  let id = int "id" in
+  let streams = get_streams ~db id in
+  let user = User.fetch ~db (int "user_id") in
+  {
+    id;
+    user;
+    website = string_opt "website";
+    name = string "name";
+    logo = string_opt "logo";
+    description = string_opt "description";
+    genre = string_opt "genre";
+    longitude = float_opt "longitude";
+    latitude = float_opt "latitude";
+    artist = string_opt "artist";
+    title = string_opt "title";
+    streams;
+    updated_at = float "updated_at_epoch";
+    created_at = float "created_at_epoch";
+  }
 
 let select_query =
   "SELECT
-    id,
-    user_id,
-    website,
-    name,
-    logo,
-    description,
-    genre,
-    longitude,
-    latitude,
-    artist,
-    title,
-    extract(epoch from updated_at),
-    extract(epoch from created_at)
+    *,
+    extract(epoch from updated_at) AS updated_at_epoch,
+    extract(epoch from created_at) AS created_at_epoch
   FROM radio
   WHERE id = $1"
 
-let fetch ~db id =
-  match%lwt
-    Pgx_lwt_unix.execute ~params:[Pgx.Value.of_int id] db select_query
+let fetch ~(db : Db.db) id =
+  match
+    list_of_result
+      (db#exec ~expect:[Postgresql.Tuples_ok]
+         ~params:[| string_of_int id |]
+         select_query)
   with
     | [row] -> populate ~db row
     | _ -> assert false
 
 let find_query =
   "SELECT
-    id,
-    user_id,
-    website,
-    name,
-    logo,
-    description,
-    genre,
-    longitude,
-    latitude,
-    artist,
-    title,
-    extract(epoch from updated_at),
-    extract(epoch from created_at)
+    *,
+    extract(epoch from updated_at) AS updated_at_epoch,
+    extract(epoch from created_at) AS created_at_epoch
   FROM radio
   WHERE name = $1
   AND user_id = $2"
 
-let find ~db ~user name =
-  match%lwt
-    Pgx_lwt_unix.execute
-      ~params:Pgx.Value.[of_string name; of_int user.User.id]
-      db find_query
+let find ~(db : Db.db) ~user name =
+  match
+    list_of_result
+      (db#exec
+         ~expect:[Postgresql.Tuples_ok; Postgresql.Command_ok]
+         ~params:[| name; string_of_int user.User.id |]
+         find_query)
   with
-    | row :: _ ->
-        let%lwt radio = populate ~db row in
-        Lwt.return (Some radio)
-    | _ -> Lwt.return None
+    | row :: _ -> Some (populate ~db row)
+    | _ -> None
 
-let sync_streams ~db ~streams id =
-  let%lwt () =
-    Pgx_lwt_unix.execute_unit ~params:[Pgx.Value.of_int id] db
-      "DELETE FROM stream WHERE radio_id = $1"
-  in
+let sync_streams ~(db : Db.db) ~streams id =
+  ignore
+    (db#exec ~expect:[Postgresql.Command_ok]
+       ~params:[| string_of_int id |]
+       "DELETE FROM stream WHERE radio_id = $1");
   let created_at = Unix.time () in
-  Lwt_list.iter_s
+  List.iter
     (fun { format; url } ->
-      Pgx_lwt_unix.execute_unit
-        ~params:
-          Pgx.Value.
-            [
-              of_int id;
-              of_string format;
-              of_string url;
-              of_float created_at;
-              of_float created_at;
-            ]
-        db
-        "INSERT INTO stream (radio_id, format, url, updated_at, created_at)
-         VALUES ($1, $2, $3, to_timestamp($4), to_timestamp($5))")
+      ignore
+        (db#exec ~expect:[Postgresql.Command_ok]
+           ~params:
+             [|
+               string_of_int id;
+               format;
+               url;
+               string_of_float created_at;
+               string_of_float created_at;
+             |]
+           "INSERT INTO stream (radio_id, format, url, updated_at, created_at)
+         VALUES ($1, $2, $3, to_timestamp($4), to_timestamp($5))"))
     streams
 
 let update_query =
@@ -192,7 +152,7 @@ let update_query =
      updated_at = to_timestamp($12)
    WHERE id = $13"
 
-let update ~db radio =
+let update ~(db : Db.db) radio =
   let {
     id;
     user;
@@ -213,26 +173,25 @@ let update ~db radio =
   in
   let updated_at = Unix.time () in
   let params =
-    Pgx.Value.
-      [
-        of_string name;
-        of_int user.User.id;
-        opt of_string website;
-        opt of_string description;
-        opt of_string genre;
-        opt of_string logo;
-        opt of_float longitude;
-        opt of_float latitude;
-        opt of_string artist;
-        opt of_string title;
-        of_float created_at;
-        of_float updated_at;
-        of_int id;
-      ]
+    [|
+      name;
+      string_of_int user.User.id;
+      opt website;
+      opt description;
+      opt genre;
+      opt logo;
+      opt (Option.map string_of_float longitude);
+      opt (Option.map string_of_float latitude);
+      opt artist;
+      opt title;
+      string_of_float created_at;
+      string_of_float updated_at;
+      string_of_int id;
+    |]
   in
-  let%lwt () = Pgx_lwt_unix.execute_unit ~params db update_query in
-  let%lwt () = sync_streams ~db ~streams id in
-  Lwt.return { radio with updated_at }
+  ignore (db#exec ~expect:[Postgresql.Command_ok] ~params update_query);
+  sync_streams ~db ~streams id;
+  { radio with updated_at }
 
 let insert_query =
   "INSERT INTO
@@ -241,88 +200,78 @@ let insert_query =
    RETURNING id"
 
 let create ?website ?description ?genre ?logo ?longitude ?latitude ?artist
-    ?title ~db ~streams ~name ~user () =
+    ?title ~(db : Db.db) ~streams ~name ~user () =
   let created_at = Unix.time () in
   let params =
-    Pgx.Value.
-      [
-        of_string name;
-        of_int user.User.id;
-        opt of_string website;
-        opt of_string description;
-        opt of_string genre;
-        opt of_string logo;
-        opt of_float longitude;
-        opt of_float latitude;
-        opt of_string artist;
-        opt of_string title;
-        of_float created_at;
-        of_float created_at;
-      ]
+    [|
+      name;
+      string_of_int user.User.id;
+      opt website;
+      opt description;
+      opt genre;
+      opt logo;
+      opt (Option.map string_of_float longitude);
+      opt (Option.map string_of_float latitude);
+      opt artist;
+      opt title;
+      string_of_float created_at;
+      string_of_float created_at;
+    |]
   in
-  match%lwt Pgx_lwt_unix.execute ~params db insert_query with
-    | [[id]] ->
-        let id = Pgx.Value.to_int_exn id in
-        let%lwt () = sync_streams ~db ~streams id in
-        Lwt.return
-          {
-            id;
-            user;
-            name;
-            website;
-            description;
-            genre;
-            logo;
-            longitude;
-            latitude;
-            artist;
-            title;
-            streams;
-            updated_at = created_at;
-            created_at;
-          }
+  match
+    list_of_result (db#exec ~expect:[Postgresql.Tuples_ok] ~params insert_query)
+  with
+    | [{ int; _ }] ->
+        let id = int "id" in
+        sync_streams ~db ~streams id;
+        {
+          id;
+          user;
+          name;
+          website;
+          description;
+          genre;
+          logo;
+          longitude;
+          latitude;
+          artist;
+          title;
+          streams;
+          updated_at = created_at;
+          created_at;
+        }
     | _ -> assert false
 
 let to_json r = [%yojson_of: Public.t] (to_Public_t r)
-
-let ping ~db r =
-  let%lwt _ = update ~db { r with updated_at = Unix.time () } in
-  Lwt.return ()
+let ping ~db r = ignore (update ~db { r with updated_at = Unix.time () })
 
 (** Set metadata of the currently playing title. *)
 let set_metadata ~db r ~artist ~title =
-  let%lwt _ = update ~db { r with artist; title } in
-  Lwt.return ()
+  ignore (update ~db { r with artist; title })
 
-let count ~db () =
-  match%lwt
-    Pgx_lwt_unix.execute ~params:[] db "SELECT COUNT(id) FROM radio"
+let count ~(db : Db.db) () =
+  match
+    list_of_result
+      (db#exec ~expect:[Postgresql.Tuples_ok]
+         "SELECT COUNT(id) AS count FROM radio")
   with
-    | [[count]] -> Lwt.return (Pgx.Value.to_int_exn count)
+    | [{ int; _ }] -> int "count"
     | _ -> assert false
 
 let page_query =
   "SELECT
-    id,
-    user_id,
-    website,
-    name,
-    logo,
-    description,
-    genre,
-    longitude,
-    latitude,
-    artist,
-    title,
-    extract(epoch from updated_at),
-    extract(epoch from created_at)
+    *,
+    extract(epoch from updated_at) AS updated_at_epoch,
+    extract(epoch from created_at) AS created_at_epoch
   FROM radio
   WHERE updated_at > NOW() - interval '1 day'
   OFFSET $1
   LIMIT $2"
 
 (* Get one page of result. *)
-let get_page ~db ~page ~pp () =
-  let params = Pgx.Value.[of_int ((page - 1) * pp); of_int pp] in
-  let%lwt page = Pgx_lwt_unix.execute ~params db page_query in
-  Lwt_list.map_p (populate ~db) page
+let get_page ~(db : Db.db) ~page ~pp () =
+  List.map (populate ~db)
+    (list_of_result
+       (db#exec ~expect:[Postgresql.Tuples_ok]
+          ~params:[| string_of_int ((page - 1) * pp); string_of_int pp |]
+          page_query))
