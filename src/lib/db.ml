@@ -37,13 +37,11 @@ let db ?host ?port ?user ?password ?database () =
 Host:     %s
 Port:     %s
 User:     %s
-Password: %s
 Database: %s
 |}
     (Option.value ~default:"(default)" host)
     (Option.value ~default:"(default)" port)
     (Option.value ~default:"(default)" user)
-    (Option.value ~default:"" password)
     (Option.value ~default:"(default)" database);
 
   new Postgresql.connection ?host ?port ?user ?password ?dbname:database ()
