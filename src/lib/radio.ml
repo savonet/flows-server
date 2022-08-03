@@ -283,13 +283,26 @@ let page_query =
     extract(epoch from created_at) AS created_at_epoch
   FROM radio
   WHERE updated_at > NOW() - interval '1 day'
-  OFFSET $1
-  LIMIT $2"
+  AND latitude <= $1
+  AND latitude >= $2
+  AND longitude <= $3
+  AND longitude >= $4
+  OFFSET $5
+  LIMIT $6"
 
 (* Get one page of result. *)
-let get_page ~(db : Db.db) ~page ~pp () =
+let get_page ~(db : Db.db) ?(north = 90.) ?(south = -90.) ?(east = 180.)
+    ?(west = -180.) ~page ~pp () =
   List.map (populate ~db)
     (list_of_result
        (db#exec ~expect:[Postgresql.Tuples_ok]
-          ~params:[| string_of_int ((page - 1) * pp); string_of_int pp |]
+          ~params:
+            [|
+              string_of_float north;
+              string_of_float south;
+              string_of_float east;
+              string_of_float west;
+              string_of_int ((page - 1) * pp);
+              string_of_int pp;
+            |]
           page_query))

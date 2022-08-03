@@ -52,6 +52,7 @@ let transaction fn =
   try
     let ret = fn db in
     ignore (db#exec "COMMIT");
+    db#finish;
     ret
   with exn ->
     let bt = Printexc.get_raw_backtrace () in
@@ -59,7 +60,7 @@ let transaction fn =
     db#finish;
     Printexc.raise_with_backtrace exn bt
 
-let table_queries =
+let setup_queries =
   [
     "CREATE TABLE IF NOT EXISTS flows_user (
       id SERIAL PRIMARY KEY,
@@ -82,6 +83,7 @@ let table_queries =
       title TEXT,
       created_at TIMESTAMP WITH TIME ZONE NOT NULL,
       updated_at TIMESTAMP WITH TIME ZONE NOT NULL)";
+    "CREATE INDEX IF NOT EXISTS radio_lat_lng ON radio (longitude, latitude)";
     "CREATE TABLE IF NOT EXISTS stream (
       id SERIAL PRIMARY KEY,
       format TEXT NOT NULL,
@@ -93,6 +95,8 @@ let table_queries =
 
 let setup ?db () =
   let exec (db : db) =
-    List.iter (fun query -> ignore (db#exec query)) table_queries
+    List.iter
+      (fun query -> ignore (db#exec ~expect:[Postgresql.Command_ok] query))
+      setup_queries
   in
   match db with Some db -> exec db | None -> transaction exec

@@ -48,24 +48,32 @@ let server =
       (query |> List.map (fun (k, v) -> k ^ "=" ^ v) |> String.concat "&");
 
     try
-      match path with
-        | "/" -> (
-            match meth with
-              | `POST -> (
-                  match JSON.of_string body with
-                    | `Assoc params ->
-                        Commands.exec ~respond_string ~params ~ip ()
-                    | _ -> failwith "Invalid JSON.")
-              | _ -> failwith "Not implemented")
-        | "/radios" ->
-            let pp = try int_of_string (List.assoc "pp" query) with _ -> 10 in
-            let page =
-              try int_of_string (List.assoc "page" query) with _ -> 1
+      match (meth, path) with
+        | `OPTIONS, "/" -> respond_string ~status:`OK ~body:"" ()
+        | `POST, "/" -> (
+            match JSON.of_string body with
+              | `Assoc params -> Commands.exec ~respond_string ~params ~ip ()
+              | _ -> failwith "Invalid JSON.")
+        | `OPTIONS, "/radios" -> respond_string ~status:`OK ~body:"" ()
+        | `GET, "/radios" ->
+            let int k v =
+              try int_of_string (List.assoc k query) with _ -> v
             in
+            let float_opt k =
+              try Some (float_of_string (List.assoc k query)) with _ -> None
+            in
+            let pp = int "pp" 100 in
+            let page = int "page" 1 in
+            let north = float_opt "north" in
+            let south = float_opt "south" in
+            let east = float_opt "east" in
+            let west = float_opt "west" in
             let total, data =
               Db.transaction (fun db ->
                   let count = Radio.count ~db () in
-                  let data = Radio.get_page ~db ~pp ~page () in
+                  let data =
+                    Radio.get_page ~db ?north ?south ?east ?west ~pp ~page ()
+                  in
                   (count / pp, data))
             in
             let body = yojson_of_page Radio.to_json { pp; page; total; data } in
