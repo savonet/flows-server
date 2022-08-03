@@ -46,7 +46,7 @@ module Create = struct
     longitude : float option;
     streams : stream list;
   }
-  [@@deriving yojson]
+  [@@deriving stable_record ~version:payload ~remove:[latitude; longitude]]
 end
 
 (** A radio. *)
