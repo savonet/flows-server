@@ -34,14 +34,12 @@ let run_tests db =
   let radio =
     Radio.create ~db ~user
       {
-        Radio.Public.name = "Some radio";
+        Radio.Create.name = "Some radio";
         website = None;
         logo = None;
         latitude = Some 30.;
         longitude = Some (-90.);
         genre = None;
-        artist = None;
-        title = None;
         description = None;
         streams;
       }
@@ -63,12 +61,16 @@ let run_tests db =
   let radio = Radio.find ~db ~user "Some radio" in
   let radio = Option.get radio in
   assert (radio.Radio.id = id);
+  assert (radio.Radio.artist = Some "Some artist");
+  assert (radio.Radio.title = Some "Some title");
+  assert (radio.Radio.latitude = Some 30.);
+  assert (radio.Radio.longitude = Some (-90.));
 
   let new_count = Radio.count ~db () in
   assert (new_count = count + 1);
 
   let page = Radio.get_page ~page:1 ~pp:10 ~db () in
-  assert ((List.hd page).Radio.id = id);
+  assert ((List.hd (List.rev page)).Radio.id = id);
 
   Printf.printf "Created radio: %s\n%!" radio.Radio.name
 

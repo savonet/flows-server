@@ -7,9 +7,10 @@ type stream = { format : string; url : string } [@@deriving yojson]
 
 type streams = stream list [@@deriving yojson]
 
-(* Public radio payload *)
-module Public = struct
+(* Exported radio payload *)
+module Export = struct
   type t = {
+    id : int;
     name : string;
     website : string option;
     description : string option;
@@ -19,6 +20,30 @@ module Public = struct
     latitude : float option;
     artist : string option;
     title : string option;
+    streams : stream list;
+  }
+  [@@deriving yojson]
+end
+
+module Create = struct
+  type payload = {
+    name : string;
+    website : string option;
+    description : string option;
+    genre : string option;
+    logo : string option;
+    streams : stream list;
+  }
+  [@@deriving yojson]
+
+  type t = {
+    name : string;
+    website : string option;
+    description : string option;
+    genre : string option;
+    logo : string option;
+    latitude : float option;
+    longitude : float option;
     streams : stream list;
   }
   [@@deriving yojson]
@@ -42,7 +67,9 @@ type t = {
   updated_at : float;
 }
 [@@deriving
-  stable_record ~version:Public.t ~remove:[id; user; created_at; updated_at]]
+  stable_record ~version:Export.t ~remove:[user; created_at; updated_at],
+    stable_record ~version:Create.t
+      ~remove:[id; user; artist; title; created_at; updated_at]]
 
 let streams_query = "SELECT * FROM stream WHERE radio_id = $1"
 
@@ -196,21 +223,19 @@ let update ~(db : Db.db) radio =
 
 let insert_query =
   "INSERT INTO
-      radio (name, user_id, website, description, genre, logo, longitude, latitude, artist, title, created_at,        updated_at)
-   VALUES   ($1,   $2,      $3,      $4,          $5,    $6,   $7,        $8,       $9,     $10,   to_timestamp($11), to_timestamp($12))
+      radio (name, user_id, website, description, genre, logo, longitude, latitude, created_at,        updated_at)
+   VALUES   ($1,   $2,      $3,      $4,          $5,    $6,   $7,        $8,       to_timestamp($9), to_timestamp($10))
    RETURNING id"
 
 let create ~(db : Db.db) ~user
     {
-      Public.name;
+      Create.name;
       website;
       description;
       genre;
       logo;
       longitude;
       latitude;
-      artist;
-      title;
       streams;
     } =
   let created_at = Unix.time () in
@@ -224,8 +249,6 @@ let create ~(db : Db.db) ~user
       opt logo;
       opt (Option.map string_of_float longitude);
       opt (Option.map string_of_float latitude);
-      opt artist;
-      opt title;
       string_of_float created_at;
       string_of_float created_at;
     |]
@@ -246,8 +269,8 @@ let create ~(db : Db.db) ~user
           logo;
           longitude;
           latitude;
-          artist;
-          title;
+          artist = None;
+          title = None;
           streams;
           updated_at = created_at;
           created_at;
@@ -257,11 +280,11 @@ let create ~(db : Db.db) ~user
 let ping ~db r = ignore (update ~db { r with updated_at = Unix.time () })
 
 let create_or_update ~(db : Db.db) ~user radio =
-  match find ~db ~user radio.Public.name with
+  match find ~db ~user radio.Create.name with
     | None -> ignore (create ~db ~user radio)
     | Some r -> ping ~db r
 
-let to_json r = [%yojson_of: Public.t] (to_Public_t r)
+let to_json r = [%yojson_of: Export.t] (to_Export_t r)
 
 (** Set metadata of the currently playing title. *)
 let set_metadata ~db r ~artist ~title =

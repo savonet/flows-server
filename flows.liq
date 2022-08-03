@@ -53,10 +53,6 @@ def flows.register(~server=null(),~email,~password,~radio,
     description=description,
     genre=genre,
     logo=logo,
-    latitude=null(),
-    longitude=null(),
-    artist=null(),
-    title=null(),
     streams=streams
   })
 
