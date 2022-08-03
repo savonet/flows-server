@@ -299,33 +299,36 @@ let count ~(db : Db.db) () =
     | [{ int; _ }] -> int "count"
     | _ -> assert false
 
-let page_query =
-  "SELECT
+let page_query ~lon_op () =
+  Printf.sprintf
+    "SELECT
     *,
     extract(epoch from updated_at) AS updated_at_epoch,
     extract(epoch from created_at) AS created_at_epoch
   FROM radio
   WHERE updated_at > NOW() - interval '1 day'
-  AND latitude <= $1
-  AND latitude >= $2
-  AND longitude <= $3
-  AND longitude >= $4
+  AND ($1 <= latitude  AND  latitude <= $2)
+  AND ($3 <= longitude %s   longitude <= $4)
   OFFSET $5
   LIMIT $6"
+    lon_op
 
 (* Get one page of result. *)
 let get_page ~(db : Db.db) ?(north = 90.) ?(south = -90.) ?(east = 180.)
     ?(west = -180.) ~page ~pp () =
+  let lng_lb, lon_op, lng_ub =
+    if west <= east then (west, "AND", east) else (east, "OR", west)
+  in
   List.map (populate ~db)
     (list_of_result
        (db#exec ~expect:[Postgresql.Tuples_ok]
           ~params:
             [|
-              string_of_float north;
               string_of_float south;
-              string_of_float east;
-              string_of_float west;
+              string_of_float north;
+              string_of_float lng_lb;
+              string_of_float lng_ub;
               string_of_int ((page - 1) * pp);
               string_of_int pp;
             |]
-          page_query))
+          (page_query ~lon_op ())))
