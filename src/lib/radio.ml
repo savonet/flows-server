@@ -10,7 +10,6 @@ type streams = stream list [@@deriving yojson]
 (* Exported radio payload *)
 module Export = struct
   type t = {
-    id : int;
     name : string;
     website : string option;
     description : string option;
@@ -67,7 +66,7 @@ type t = {
   updated_at : float;
 }
 [@@deriving
-  stable_record ~version:Export.t ~remove:[user; created_at; updated_at],
+  stable_record ~version:Export.t ~remove:[id; user; created_at; updated_at],
     stable_record ~version:Create.t
       ~remove:[id; user; artist; title; created_at; updated_at]]
 
