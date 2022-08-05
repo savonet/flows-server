@@ -3,7 +3,7 @@
 open Utils
 
 (** A stream. *)
-type stream = { format : string; url : string } [@@deriving yojson]
+type stream = { id : int; format : string; url : string } [@@deriving yojson]
 
 type streams = stream list [@@deriving yojson]
 
@@ -25,13 +25,16 @@ module Export = struct
 end
 
 module Create = struct
+  type stream_payload = { format : string; url : string }
+  [@@deriving yojson, stable_record ~version:stream ~add:[id]]
+
   type payload = {
     name : string;
     website : string option;
     description : string option;
     genre : string option;
     logo : string option;
-    streams : stream list;
+    streams : stream_payload list;
   }
   [@@deriving yojson]
 
@@ -43,7 +46,7 @@ module Create = struct
     logo : string option;
     latitude : float option;
     longitude : float option;
-    streams : stream list;
+    streams : stream_payload list;
   }
   [@@deriving stable_record ~version:payload ~remove:[latitude; longitude]]
 end
@@ -68,13 +71,15 @@ type t = {
 [@@deriving
   stable_record ~version:Export.t ~remove:[id; user; created_at; updated_at],
     stable_record ~version:Create.t
-      ~remove:[id; user; artist; title; created_at; updated_at]]
+      ~remove:[id; user; artist; title; created_at; updated_at]
+      ~modify:[streams]]
 
 let streams_query = "SELECT * FROM stream WHERE radio_id = $1"
 
 let get_streams ~(db : Db.db) id =
   List.map
-    (fun { string; _ } -> { format = string "format"; url = string "url" })
+    (fun { int; string; _ } ->
+      { id = int "id"; format = string "format"; url = string "url" })
     (list_of_result
        (db#exec ~expect:[Postgresql.Tuples_ok]
           ~params:[| string_of_int id |]
@@ -139,26 +144,35 @@ let find ~(db : Db.db) ~user name =
     | row :: _ -> Some (populate ~db row)
     | _ -> None
 
+let insert_streams_query =
+  "INSERT INTO
+     stream (radio_id, format, url, updated_at,       created_at)
+   VALUES   ($1,       $2,     $3,  to_timestamp($4), to_timestamp($5))
+   RETURNING id"
+
 let sync_streams ~(db : Db.db) ~streams id =
   ignore
     (db#exec ~expect:[Postgresql.Command_ok]
        ~params:[| string_of_int id |]
        "DELETE FROM stream WHERE radio_id = $1");
   let created_at = Unix.time () in
-  List.iter
-    (fun { format; url } ->
-      ignore
-        (db#exec ~expect:[Postgresql.Command_ok]
-           ~params:
-             [|
-               string_of_int id;
-               format;
-               url;
-               string_of_float created_at;
-               string_of_float created_at;
-             |]
-           "INSERT INTO stream (radio_id, format, url, updated_at, created_at)
-         VALUES ($1, $2, $3, to_timestamp($4), to_timestamp($5))"))
+  List.map
+    (fun { Create.format; url } ->
+      match
+        list_of_result
+          (db#exec ~expect:[Postgresql.Tuples_ok]
+             ~params:
+               [|
+                 string_of_int id;
+                 format;
+                 url;
+                 string_of_float created_at;
+                 string_of_float created_at;
+               |]
+             insert_streams_query)
+      with
+        | { int; _ } :: _ -> { id = int "id"; format; url }
+        | _ -> assert false)
     streams
 
 let update_query =
@@ -217,8 +231,11 @@ let update ~(db : Db.db) radio =
     |]
   in
   ignore (db#exec ~expect:[Postgresql.Command_ok] ~params update_query);
-  sync_streams ~db ~streams id;
-  { radio with updated_at }
+  let streams =
+    List.map (fun { format; url; _ } -> { Create.format; url }) streams
+  in
+  let streams = sync_streams ~db ~streams id in
+  { radio with streams; updated_at }
 
 let insert_query =
   "INSERT INTO
@@ -257,7 +274,7 @@ let create ~(db : Db.db) ~user
   with
     | [{ int; _ }] ->
         let id = int "id" in
-        sync_streams ~db ~streams id;
+        let streams = sync_streams ~db ~streams id in
         {
           id;
           user;

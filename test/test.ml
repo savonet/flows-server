@@ -26,8 +26,8 @@ let run_tests db =
 
   let streams =
     [
-      { Radio.format = "bla"; url = "gni" };
-      { Radio.format = "blo"; url = "gno" };
+      { Radio.Create.format = "bla"; url = "gni" };
+      { Radio.Create.format = "blo"; url = "gno" };
     ]
   in
 
@@ -44,6 +44,8 @@ let run_tests db =
         streams;
       }
   in
+
+  Printf.printf "Stream ID: %d\n%!" (List.hd radio.Radio.streams).Radio.id;
 
   let radio =
     Radio.update ~db
